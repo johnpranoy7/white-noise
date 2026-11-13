@@ -1,14 +1,17 @@
 # Whitenoise
 
-Noise and nature sounds for focus and sleep, generated in the browser.
+Noise and nature sounds for focus and sleep, generated live in the browser.
 
-- **Noise:** white, pink, brown, grey and deep brown, synthesised live in an AudioWorklet (no audio files, never repeats).
-- **Nature:** rain, stream, ocean and wind. Synthesised by default; drop in a CC0 recording to replace any of them.
-- **One sound at a time.** Nothing plays until you pick one; picking another crossfades to it, and picking the playing one pauses it. Keys: `Space` play/pause, `1`–`9` choose.
-- **Sleep timer** that fades out over the last stretch instead of cutting off, and a **focus timer** (25/5 or 50/10) that lowers the sound during breaks.
-- Keeps playing with the phone locked, with lock-screen controls (Media Session). Installable as a PWA and works offline.
+- **Noise:** white, pink, brown, grey and deep brown, synthesised in an AudioWorklet. No audio files, and it never repeats.
+- **Nature:** rain, stream, ocean and breeze, tuned to be soft and slow for sleep. Synthesised by default; drop in a CC0 recording to replace any of them.
+- **One sound at a time.** Nothing plays until you pick one. Sounds swell in over about 1.6 s, switching crossfades, and picking the playing sound pauses it.
+- **Keyboard:** `Space` plays/pauses, `1`–`9` pick a sound.
+- **Sleep timer** that fades out over its last stretch instead of cutting off, and a **focus timer** (25/5 or 50/10) that lowers the sound during breaks.
+- Keeps playing with the phone locked, with lock-screen controls (Media Session). Installable as a PWA.
 
 Stack: React + TypeScript + Vite, the raw Web Audio API, Zustand, vite-plugin-pwa. It ships as a small non-root nginx container (amd64 + arm64).
+
+The design and the reasoning behind it are in [docs/DESIGN.md](docs/DESIGN.md).
 
 ## Develop
 
@@ -36,7 +39,7 @@ current sound (crossfades on switch) ─▶ master ─▶ duck (focus breaks) �
    { "rain": "rain.m4a", "ocean": "ocean.m4a" }
    ```
 
-   Valid ids: `rain`, `stream`, `ocean`, `wind` (noise ids work too, but generated noise is better).
+   Valid ids: `rain`, `stream`, `ocean`, `wind` (shown as Breeze). Noise ids work too, but generated noise is better.
 3. Loops don't need to be trimmed: the app crossfades the last 2 s into the start so there's no seam.
 
 Use sounds whose license allows public reuse (for example CC0 on Freesound or Pixabay), and credit them in `public/sounds/CREDITS.md`. Anything without a recording falls back to the synthesised version.
@@ -47,8 +50,8 @@ Use sounds whose license allows public reuse (for example CC0 on Freesound or Pi
 
 Pushing to `main` runs `.github/workflows/docker.yml`, which builds an amd64 + arm64 image and pushes:
 
-- `ghcr.io/<github-user>/whitenoise:latest`
-- `ghcr.io/<github-user>/whitenoise:sha-<commit>` (for rollbacks)
+- `ghcr.io/johnpranoy7/whitenoise:latest`
+- `ghcr.io/johnpranoy7/whitenoise:sha-<commit>` (for rollbacks)
 
 GHCR packages start out private. Either make the package public (GitHub → your profile → Packages → whitenoise → Package settings), or add a GHCR registry in Portainer with a personal access token that has `read:packages`.
 
@@ -61,7 +64,7 @@ docker run --rm -p 8086:8080 whitenoise
 
 ### 2. Portainer stack
 
-Stacks → Add stack → paste `docker-compose.yml`, replacing `GITHUB_USER`. The container listens on 8080 inside and is published on host port 8086.
+Stacks → Add stack → paste `docker-compose.yml`. The container listens on 8080 inside and is published on host port 8086.
 
 To update by hand: open the stack → **Pull and redeploy**.
 To update automatically: enable the stack's webhook in Portainer, copy its URL into a GitHub repository secret named `PORTAINER_WEBHOOK`, and the workflow will call it after each push to `main`.

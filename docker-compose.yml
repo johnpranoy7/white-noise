@@ -1,11 +1,11 @@
 # Portainer stack for Whitenoise.
-# Paste this into Portainer → Stacks → Add stack, replacing GITHUB_USER below.
+# Paste this into Portainer → Stacks → Add stack.
 # Your existing Cloudflare Tunnel then gets a public hostname such as
 # whitenoise.yourdomain.com pointing at this service (see README).
 
 services:
   whitenoise:
-    image: ghcr.io/GITHUB_USER/whitenoise:latest
+    image: ghcr.io/johnpranoy7/whitenoise:latest
     container_name: whitenoise
     restart: unless-stopped
     ports:
