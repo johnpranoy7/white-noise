@@ -9,7 +9,7 @@ COPY . .
 RUN npm run build
 
 # ---- runtime: nginx serving dist/ as a non-root user on port 8080 ----
-FROM nginxinc/nginx-unprivileged:1.28-alpine
+FROM nginxinc/nginx-unprivileged:1.31-alpine
 
 # Rendered to /etc/nginx/conf.d/default.conf at startup with envsubst.
 COPY deploy/nginx.conf.template /etc/nginx/templates/default.conf.template
