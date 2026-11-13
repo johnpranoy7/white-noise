@@ -69,7 +69,7 @@ jobs:
 
       # amd64 for a regular server/PC, arm64 for a Raspberry Pi or similar.
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           platforms: linux/amd64,linux/arm64
