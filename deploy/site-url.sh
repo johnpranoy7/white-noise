@@ -8,6 +8,13 @@ html=/usr/share/nginx/html
 url="${SITE_URL:-}"
 url="${url%/}"
 
+# The address is written into HTML, XML and a sed replacement, so accept only a plain
+# http(s)://host[:port][/path] made of safe characters; anything else is ignored.
+if [ -n "$url" ] && ! printf '%s' "$url" | grep -Eq '^https?://[A-Za-z0-9.-]+(:[0-9]{1,5})?(/[A-Za-z0-9._~/-]*)?$'; then
+  echo "site-url: SITE_URL '$url' is not a plain http(s) address; ignoring it" >&2
+  url=""
+fi
+
 if [ -n "$url" ]; then
   sed -i "s|__SITE_URL__|$url|g" "$html/index.html"
   printf 'User-agent: *\nAllow: /\n\nSitemap: %s/sitemap.xml\n' "$url" > "$html/robots.txt"

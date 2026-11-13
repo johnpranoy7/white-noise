@@ -28,7 +28,8 @@ const SECTIONS: { title: string; body: string }[] = [
     title: 'Listening comfortably',
     body:
       'Keep the volume just loud enough to soften distractions. For babies and young children, place ' +
-      'the speaker across the room, keep it quiet, and use the sleep timer rather than playing all night.',
+      'the speaker across the room, keep it quiet, and use the sleep timer rather than playing all night. ' +
+      "Whitenoise isn't a medical device; for sleep, hearing or attention concerns, talk to a doctor.",
   },
 ];
 

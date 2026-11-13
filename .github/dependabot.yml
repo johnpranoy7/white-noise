@@ -1,0 +1,20 @@
+# Weekly pull requests for security and version updates: the npm packages, the
+# Docker base images (node, nginx-unprivileged) and the GitHub Actions in CI.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      # one PR for the build tooling instead of one per package
+      build-tooling:
+        patterns: ["vite*", "@vitejs/*", "typescript", "@types/*", "workbox-*"]
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

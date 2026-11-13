@@ -795,7 +795,9 @@ kbd {
 }
 
 .tile[data-playing] .tile-fill::after {
-  animation: grain 0.6s steps(6) infinite;
+  /* 6 jumps over 2.4 s = 2.5 changes a second, under the 3-per-second flash limit
+     in WCAG 2.3.1, so the shimmer is safe for photosensitive viewers. */
+  animation: grain 2.4s steps(6) infinite;
 }
 
 @keyframes grain {

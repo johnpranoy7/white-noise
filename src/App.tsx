@@ -113,6 +113,9 @@ export default function App() {
           <a href={DEVELOPER.source} target="_blank" rel="noopener">
             Source on GitHub
           </a>
+          <a href="/third-party-notices.txt" target="_blank" rel="noopener">
+            Licenses
+          </a>
         </nav>
       </footer>
     </div>
