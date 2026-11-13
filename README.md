@@ -50,10 +50,10 @@ Use sounds whose license allows public reuse (for example CC0 on Freesound or Pi
 
 Pushing to `main` runs `.github/workflows/docker.yml`, which builds an amd64 + arm64 image and pushes:
 
-- `ghcr.io/johnpranoy7/whitenoise:latest`
-- `ghcr.io/johnpranoy7/whitenoise:sha-<commit>` (for rollbacks)
+- `ghcr.io/johnpranoy7/white-noise:latest`
+- `ghcr.io/johnpranoy7/white-noise:sha-<commit>` (for rollbacks)
 
-GHCR packages start out private. Either make the package public (GitHub → your profile → Packages → whitenoise → Package settings), or add a GHCR registry in Portainer with a personal access token that has `read:packages`.
+GHCR packages start out private. Either make the package public (GitHub → your profile → Packages → white-noise → Package settings), or add a GHCR registry in Portainer with a personal access token that has `read:packages`.
 
 Local test:
 

@@ -5,7 +5,7 @@
 
 services:
   whitenoise:
-    image: ghcr.io/johnpranoy7/whitenoise:latest
+    image: ghcr.io/johnpranoy7/white-noise:latest
     container_name: whitenoise
     restart: unless-stopped
     ports:
