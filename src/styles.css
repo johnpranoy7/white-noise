@@ -126,8 +126,10 @@ kbd {
   font-weight: 400;
   font-family: var(--serif);
   font-style: italic;
-  font-size: 28px;
-  letter-spacing: -0.01em;
+  font-size: 38px;
+  /* line-height 1 keeps the top bar about as tall as before the size bump */
+  line-height: 1;
+  letter-spacing: -0.02em;
 }
 
 .topbar-end {
@@ -989,6 +991,10 @@ kbd {
 
   .topbar {
     align-items: center;
+  }
+
+  .wordmark {
+    font-size: 32px;
   }
 
   .layout {

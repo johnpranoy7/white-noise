@@ -92,6 +92,24 @@ class AudioEngine {
   /** Called when the lock screen or a headset button asks to play or pause. */
   onRemoteToggle: (play: boolean) => void = () => {};
 
+  /** Called when the lock screen's previous/next buttons are pressed (-1 or +1). */
+  onRemoteSkip: (direction: -1 | 1) => void = () => {};
+
+  private nowPlaying: MediaMetadataInit = {
+    title: 'Whitenoise',
+    artist: 'Focus & sleep sounds',
+    artwork: [{ src: '/icon-512.png', sizes: '512x512', type: 'image/png' }],
+  };
+
+  /**
+   * What the lock screen and media controls show. It is re-applied whenever playback
+   * starts, because iOS ignores details that were set before the audio was playing.
+   */
+  setNowPlaying(info: MediaMetadataInit) {
+    this.nowPlaying = info;
+    this.applyNowPlaying();
+  }
+
   /**
    * Fetches the worklet and the recordings manifest ahead of time so they are cached
    * by the first click. Needs no user gesture.
@@ -116,7 +134,12 @@ class AudioEngine {
     this.playing = true;
     // Both calls happen synchronously in the gesture; the worklet loads afterwards.
     void ctx.resume();
-    if (!this.directOutput) this.element.play().catch(() => this.useDirectOutput());
+    if (!this.directOutput) {
+      this.element
+        .play()
+        .then(() => this.applyNowPlaying())
+        .catch(() => this.useDirectOutput());
+    }
     const resuming = this.current && this.layers.get(this.current)?.source;
     if (resuming) {
       // The layer is still at full level from before the pause; swell the output instead.
@@ -233,6 +256,11 @@ class AudioEngine {
       const dest = new MediaStreamAudioDestinationNode(ctx);
       this.limiter.connect(dest);
       this.element.srcObject = dest.stream;
+      // iOS shows the lock-screen details only once audio is actually playing.
+      this.element.addEventListener('playing', () => {
+        this.applyNowPlaying();
+        this.updateMediaSession();
+      });
     } else {
       this.useDirectOutput();
     }
@@ -314,17 +342,26 @@ class AudioEngine {
 
   private setupMediaSession() {
     if (!('mediaSession' in navigator)) return;
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title: 'Whitenoise',
-      artist: 'Focus & sleep sounds',
-      artwork: [
-        { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
-        { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-      ],
-    });
-    navigator.mediaSession.setActionHandler('play', () => this.onRemoteToggle(true));
-    navigator.mediaSession.setActionHandler('pause', () => this.onRemoteToggle(false));
-    navigator.mediaSession.setActionHandler('stop', () => this.onRemoteToggle(false));
+    const handlers: [MediaSessionAction, MediaSessionActionHandler][] = [
+      ['play', () => this.onRemoteToggle(true)],
+      ['pause', () => this.onRemoteToggle(false)],
+      ['stop', () => this.onRemoteToggle(false)],
+      // The lock screen's skip buttons move through the sounds.
+      ['previoustrack', () => this.onRemoteSkip(-1)],
+      ['nexttrack', () => this.onRemoteSkip(1)],
+    ];
+    for (const [action, handler] of handlers) {
+      try {
+        navigator.mediaSession.setActionHandler(action, handler);
+      } catch {
+        // an action this browser doesn't support
+      }
+    }
+    this.applyNowPlaying();
+  }
+
+  private applyNowPlaying() {
+    if ('mediaSession' in navigator) navigator.mediaSession.metadata = new MediaMetadata(this.nowPlaying);
   }
 
   private updateMediaSession() {

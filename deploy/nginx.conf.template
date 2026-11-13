@@ -47,6 +47,12 @@ server {
         try_files $uri =404;
     }
 
+    # Lock-screen artwork; names aren't hashed, so cache for a week rather than a year.
+    location /artwork/ {
+        expires 7d;
+        try_files $uri =404;
+    }
+
     # Only exists when SITE_URL is set; never fall back to the app for it.
     location = /sitemap.xml {
         expires 1d;

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { engine } from '../audio/engine';
-import type { SoundId } from '../audio/sounds';
+import { nowPlayingFor, SOUNDS, soundById, type SoundId } from '../audio/sounds';
 
 export interface SleepTimer {
   endsAt: number;
@@ -52,6 +52,8 @@ interface State {
 
   /** Picking the playing sound pauses it; picking any other sound switches to it and plays. */
   select(id: SoundId): void;
+  /** Moves to the previous (-1) or next (+1) sound, wrapping around; used by the lock screen. */
+  step(direction: -1 | 1): void;
   togglePlay(): void;
   play(): void;
   pause(): void;
@@ -83,8 +85,15 @@ export const useStore = create<State>()(
         const { current, playing } = get();
         if (id === current && playing) return get().pause();
         engine.setSound(id);
+        engine.setNowPlaying(nowPlayingFor(soundById(id)));
         set({ current: id });
         if (!playing) get().play();
+      },
+
+      step: (direction) => {
+        const index = SOUNDS.findIndex((s) => s.id === get().current);
+        const next = SOUNDS[(index + direction + SOUNDS.length) % SOUNDS.length];
+        get().select(next.id);
       },
 
       togglePlay: () => (get().playing ? get().pause() : get().play()),
@@ -94,6 +103,7 @@ export const useStore = create<State>()(
         if (playing || !current) return;
         engine.setMaster(playedVolume(get()));
         engine.setSound(current);
+        engine.setNowPlaying(nowPlayingFor(soundById(current)));
         void engine.start();
         if (focusTimer?.phase === 'break') engine.setDuck(BREAK_LEVEL, 0.1);
         set({ playing: true });
@@ -186,3 +196,4 @@ export const useStore = create<State>()(
 
 // Lock-screen / headset buttons.
 engine.onRemoteToggle = (play) => (play ? useStore.getState().play() : useStore.getState().pause());
+engine.onRemoteSkip = (direction) => useStore.getState().step(direction);

@@ -162,3 +162,14 @@ export const SOUNDS: SoundDef[] = [
 export const soundById = (id: SoundId) => SOUNDS.find((s) => s.id === id)!;
 
 export const soundByKey = (key: string) => SOUNDS.find((s) => s.key === key.toUpperCase());
+
+/** Lock-screen details for a sound: "Pink noise · Whitenoise" with its swatch as artwork. */
+export const nowPlayingFor = (sound: SoundDef): MediaMetadataInit => ({
+  title: sound.group === 'noise' ? `${sound.name} noise` : sound.name,
+  artist: 'Whitenoise',
+  album: sound.group === 'noise' ? 'Noise' : 'Nature',
+  artwork: [
+    { src: `/artwork/${sound.id}.jpg`, sizes: '512x512', type: 'image/jpeg' },
+    { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+  ],
+});
