@@ -1,6 +1,6 @@
 import workletUrl from './noise-processor.js?url';
 import { createProcedural, createRecording, loadManifest, type Source } from './layers';
-import type { SoundId, Volumes } from './sounds';
+import type { SoundId } from './sounds';
 
 interface Layer {
   gain: GainNode;
@@ -12,11 +12,13 @@ interface Layer {
 const toGain = (v: number) => v * v;
 
 const SMOOTH = 0.08; // seconds, time constant for volume changes
+const CROSSFADE = 0.25; // seconds, time constant when switching sounds
 
 /**
- * Owns the Web Audio graph:
+ * Owns the Web Audio graph. Only one sound plays at a time; switching sounds
+ * crossfades the old layer out and the new one in.
  *
- *   layers → mix → master (user volume) → duck (focus breaks) → sleep (sleep timer)
+ *   layer → mix → master (user volume) → duck (focus breaks) → sleep (sleep timer)
  *          → limiter → MediaStream → <audio>
  *
  * The final hop through an <audio> element is what keeps iOS playing with the screen
@@ -33,7 +35,7 @@ class AudioEngine {
   private element = new Audio();
   private ready?: Promise<void>;
   private layers = new Map<SoundId, Layer>();
-  private volumes: Partial<Volumes> = {};
+  private current: SoundId | null = null;
   private masterVolume = 0.8;
   private playing = false;
 
@@ -71,8 +73,8 @@ class AudioEngine {
     return this.playing;
   }
 
-  setVolumes(volumes: Volumes) {
-    this.volumes = { ...volumes };
+  setSound(id: SoundId | null) {
+    this.current = id;
     if (this.playing) this.syncLayers();
   }
 
@@ -187,18 +189,18 @@ class AudioEngine {
   private syncLayers() {
     const ctx = this.ctx;
     if (!ctx) return;
-    for (const [id, v] of Object.entries(this.volumes) as [SoundId, number][]) {
-      const layer = this.layers.get(id);
-      if (v > 0) {
-        const target = layer ?? this.createLayer(id);
-        clearTimeout(target.disposeTimer);
-        target.disposeTimer = undefined;
-        target.gain.gain.setTargetAtTime(toGain(v), ctx.currentTime, SMOOTH);
-      } else if (layer && layer.disposeTimer === undefined) {
-        layer.gain.gain.setTargetAtTime(0, ctx.currentTime, SMOOTH);
-        // Free the nodes once the fade has finished; a silent layer still costs CPU.
-        layer.disposeTimer = window.setTimeout(() => this.disposeLayer(id), 600);
-      }
+    const now = ctx.currentTime;
+    if (this.current) {
+      const layer = this.layers.get(this.current) ?? this.createLayer(this.current);
+      clearTimeout(layer.disposeTimer);
+      layer.disposeTimer = undefined;
+      layer.gain.gain.setTargetAtTime(1, now, CROSSFADE);
+    }
+    for (const [id, layer] of this.layers) {
+      if (id === this.current || layer.disposeTimer !== undefined) continue;
+      layer.gain.gain.setTargetAtTime(0, now, CROSSFADE);
+      // Free the nodes once the fade has finished; a silent layer still costs CPU.
+      layer.disposeTimer = window.setTimeout(() => this.disposeLayer(id), CROSSFADE * 6000);
     }
   }
 

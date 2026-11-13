@@ -16,8 +16,8 @@ export default defineConfig({
         name: 'Whitenoise',
         short_name: 'Whitenoise',
         description: 'Noise and nature sounds for focus and sleep.',
-        theme_color: '#0f1420',
-        background_color: '#0f1420',
+        theme_color: '#0e0e0d',
+        background_color: '#0e0e0d',
         display: 'standalone',
         start_url: '/',
         icons: [
@@ -26,7 +26,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg}'],
+        globPatterns: ['**/*.{js,css,html,svg,woff2}'],
         navigateFallbackDenylist: [/^\/healthz/, /^\/sounds\//],
         runtimeCaching: [
           {

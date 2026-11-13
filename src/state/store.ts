@@ -1,20 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { engine } from '../audio/engine';
-import { silentVolumes, type SoundId, type Volumes } from '../audio/sounds';
-
-export interface Mix {
-  name: string;
-  volumes: Partial<Volumes>;
-}
-
-export const BUILT_IN_MIXES: Mix[] = [
-  { name: 'Study', volumes: { pink: 0.45, rain: 0.35 } },
-  { name: 'Deep focus', volumes: { brown: 0.55, grey: 0.15 } },
-  { name: 'Sleep', volumes: { deep: 0.6, rain: 0.4 } },
-  { name: 'Seaside', volumes: { ocean: 0.6, wind: 0.2 } },
-  { name: 'Forest creek', volumes: { stream: 0.5, wind: 0.25, pink: 0.15 } },
-];
+import type { SoundId } from '../audio/sounds';
 
 export interface SleepTimer {
   endsAt: number;
@@ -36,22 +23,19 @@ const BREAK_LEVEL = 0.25;
 const sleepFadeSeconds = (minutes: number) => Math.min(minutes * 30, 20 * 60);
 
 interface State {
+  /** Nothing is selected until the user picks a sound; nothing plays on load. */
+  current: SoundId | null;
   playing: boolean;
-  volumes: Volumes;
-  master: number;
-  savedMixes: Mix[];
-  activeMix: string | null;
+  volume: number;
   sleepTimer: SleepTimer | null;
   focusTimer: FocusTimer | null;
 
+  /** Picking the playing sound pauses it; picking any other sound switches to it and plays. */
+  select(id: SoundId): void;
   togglePlay(): void;
   play(): void;
   pause(): void;
-  setVolume(id: SoundId, v: number): void;
-  setMaster(v: number): void;
-  applyMix(mix: Mix): void;
-  saveMix(name: string): void;
-  deleteMix(name: string): void;
+  setVolume(v: number): void;
   startSleepTimer(minutes: number): void;
   cancelSleepTimer(): void;
   startFocusTimer(focusMin: number, breakMin: number): void;
@@ -60,30 +44,32 @@ interface State {
   tick(now: number): void;
 }
 
-const isSilent = (v: Volumes) => Object.values(v).every((x) => x === 0);
-
 export const useStore = create<State>()(
   persist(
     (set, get) => ({
+      current: null,
       playing: false,
-      volumes: { ...silentVolumes(), ...BUILT_IN_MIXES[0].volumes },
-      master: 0.8,
-      savedMixes: [],
-      activeMix: BUILT_IN_MIXES[0].name,
+      volume: 0.7,
       sleepTimer: null,
       focusTimer: null,
+
+      select: (id) => {
+        const { current, playing } = get();
+        if (id === current && playing) return get().pause();
+        engine.setSound(id);
+        set({ current: id });
+        if (!playing) get().play();
+      },
 
       togglePlay: () => (get().playing ? get().pause() : get().play()),
 
       play: () => {
-        if (get().playing) return;
-        // Pressing play on an empty mix would be silent and confusing.
-        if (isSilent(get().volumes)) get().applyMix(BUILT_IN_MIXES[0]);
-        engine.setMaster(get().master);
-        engine.setVolumes(get().volumes);
+        const { playing, current, volume, focusTimer } = get();
+        if (playing || !current) return;
+        engine.setMaster(volume);
+        engine.setSound(current);
         void engine.start();
-        const focus = get().focusTimer;
-        if (focus?.phase === 'break') engine.setDuck(BREAK_LEVEL, 0.1);
+        if (focusTimer?.phase === 'break') engine.setDuck(BREAK_LEVEL, 0.1);
         set({ playing: true });
       },
 
@@ -94,41 +80,12 @@ export const useStore = create<State>()(
         set({ playing: false, sleepTimer: null });
       },
 
-      setVolume: (id, v) => {
-        const volumes = { ...get().volumes, [id]: v };
-        engine.setVolumes(volumes);
-        set({ volumes, activeMix: null });
-      },
-
-      setMaster: (v) => {
+      setVolume: (v) => {
         engine.setMaster(v);
-        set({ master: v });
+        set({ volume: v });
       },
-
-      applyMix: (mix) => {
-        const volumes = { ...silentVolumes(), ...mix.volumes };
-        engine.setVolumes(volumes);
-        set({ volumes, activeMix: mix.name });
-      },
-
-      saveMix: (name) => {
-        const trimmed = name.trim().slice(0, 32);
-        if (!trimmed) return;
-        const volumes = Object.fromEntries(
-          Object.entries(get().volumes).filter(([, v]) => v > 0),
-        ) as Partial<Volumes>;
-        const others = get().savedMixes.filter((m) => m.name !== trimmed);
-        set({ savedMixes: [...others, { name: trimmed, volumes }], activeMix: trimmed });
-      },
-
-      deleteMix: (name) =>
-        set((s) => ({
-          savedMixes: s.savedMixes.filter((m) => m.name !== name),
-          activeMix: s.activeMix === name ? null : s.activeMix,
-        })),
 
       startSleepTimer: (minutes) => {
-        if (!get().playing) get().play();
         engine.scheduleSleepFade(minutes * 60, sleepFadeSeconds(minutes));
         set({ sleepTimer: { minutes, endsAt: Date.now() + minutes * 60_000 } });
       },
@@ -139,7 +96,6 @@ export const useStore = create<State>()(
       },
 
       startFocusTimer: (focusMin, breakMin) => {
-        if (!get().playing) get().play();
         engine.setDuck(1, 0.5);
         set({
           focusTimer: { phase: 'focus', endsAt: Date.now() + focusMin * 60_000, focusMin, breakMin, round: 1 },
@@ -174,17 +130,12 @@ export const useStore = create<State>()(
     }),
     {
       name: 'whitenoise',
-      version: 1,
-      partialize: (s) => ({
-        volumes: s.volumes,
-        master: s.master,
-        savedMixes: s.savedMixes,
-        activeMix: s.activeMix,
-      }),
-      // Sounds added in later versions start silent instead of undefined.
-      merge: (persisted, current) => {
-        const p = (persisted ?? {}) as Partial<State>;
-        return { ...current, ...p, volumes: { ...current.volumes, ...p.volumes } };
+      version: 2,
+      // Only the volume is remembered; the sound is always chosen fresh.
+      partialize: (s) => ({ volume: s.volume }),
+      migrate: (persisted) => {
+        const p = persisted as { volume?: number; master?: number } | undefined;
+        return { volume: p?.volume ?? p?.master ?? 0.7 };
       },
     },
   ),

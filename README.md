@@ -4,7 +4,7 @@ Noise and nature sounds for focus and sleep, generated in the browser.
 
 - **Noise:** white, pink, brown, grey and deep brown, synthesised live in an AudioWorklet (no audio files, never repeats).
 - **Nature:** rain, stream, ocean and wind. Synthesised by default; drop in a CC0 recording to replace any of them.
-- **Mixer** with per-sound and master volume, built-in mixes, and your own saved mixes (stored in the browser).
+- **One sound at a time.** Nothing plays until you pick one; picking another crossfades to it, and picking the playing one pauses it. Keys: `Space` play/pause, `1`–`9` choose.
 - **Sleep timer** that fades out over the last stretch instead of cutting off, and a **focus timer** (25/5 or 50/10) that lowers the sound during breaks.
 - Keeps playing with the phone locked, with lock-screen controls (Media Session). Installable as a PWA and works offline.
 
@@ -20,7 +20,7 @@ npm run dev
 ## How the audio works
 
 ```
-sound layers ─▶ mix ─▶ master ─▶ duck (focus breaks) ─▶ sleep fade ─▶ limiter ─▶ MediaStream ─▶ <audio>
+current sound (crossfades on switch) ─▶ master ─▶ duck (focus breaks) ─▶ sleep fade ─▶ limiter ─▶ MediaStream ─▶ <audio>
 ```
 
 - `src/audio/noise-processor.js` generates stereo white/pink/brown noise and the rain texture (a pink bed plus randomly placed drops).
