@@ -470,30 +470,29 @@ kbd {
 }
 
 .grid {
+  --grid-gap: 14px;
   display: grid;
-  gap: 14px;
+  gap: var(--grid-gap);
 }
 
-/* Noise: a bento of three squares over two wide tiles, all the same height. */
+/* Noise: four tiles over three wider ones, all the same height, reading bright to dark. */
 .grid-noise {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  container-type: inline-size;
 }
 
 .grid-noise .tile {
-  grid-column: span 2;
-}
-
-.grid-noise .tile:nth-child(n + 4) {
   grid-column: span 3;
 }
 
-.grid-noise .tile-swatch {
-  aspect-ratio: 5 / 4;
+.grid-noise .tile:nth-child(n + 5) {
+  grid-column: span 4;
 }
 
-/* 1.5× wider than the top row, so 1.5× the ratio keeps both rows the same height. */
-.grid-noise .tile:nth-child(n + 4) .tile-swatch {
-  aspect-ratio: 15 / 8;
+/* Every swatch is as tall as a top-row tile is wide (square on top, wider below),
+   sized from the grid's width so gaps can't make the rows drift apart. */
+.grid-noise .tile-swatch {
+  height: calc((100cqw - 3 * var(--grid-gap)) / 4);
 }
 
 .grid-nature {
@@ -802,7 +801,7 @@ kbd {
   }
 
   .grid {
-    gap: 10px;
+    --grid-gap: 10px;
   }
 
   .tile-swatch {

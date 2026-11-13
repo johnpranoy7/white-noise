@@ -57,7 +57,7 @@ function Tile({ sound, index }: { sound: SoundDef; index: number }) {
       </span>
       <span className="tile-meta">
         <span className="tile-name">{sound.name}</span>
-        <kbd className="tile-key">{index + 1}</kbd>
+        <kbd className="tile-key">{sound.key}</kbd>
       </span>
     </button>
   );

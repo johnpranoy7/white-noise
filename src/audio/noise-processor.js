@@ -6,6 +6,7 @@
 // audioWorklet.addModule().
 
 const PINK_SCALE = 0.11;
+const MAX_DROPS = 48;
 const BROWN_SCALE = 3.5;
 
 class ChannelState {
@@ -14,6 +15,8 @@ class ChannelState {
     this.b0 = 0; this.b1 = 0; this.b2 = 0; this.b3 = 0; this.b4 = 0; this.b5 = 0; this.b6 = 0;
     // Brown-noise integrator
     this.last = 0;
+    // Previous pink sample, for blue noise
+    this.prevPink = 0;
   }
 
   pink(white) {
@@ -26,6 +29,15 @@ class ChannelState {
     const out = this.b0 + this.b1 + this.b2 + this.b3 + this.b4 + this.b5 + this.b6 + white * 0.5362;
     this.b6 = white * 0.115926;
     return out * PINK_SCALE;
+  }
+
+  // First difference of pink noise: differencing tilts the spectrum up 6 dB/octave,
+  // turning pink's -3 dB/octave into blue's +3.
+  blue(white) {
+    const p = this.pink(white);
+    const out = p - this.prevPink;
+    this.prevPink = p;
+    return out;
   }
 
   // Leaky integration of white noise: -6 dB/octave without drifting off to DC.
@@ -44,25 +56,43 @@ class NoiseProcessor extends AudioWorkletProcessor {
 
     // Rain: a soft pink bed plus individual drops, each a short burst of noise
     // with a fast exponential decay and a random position in the stereo field.
+    // Drops live in fixed typed arrays so the audio thread never allocates (and
+    // never pauses for garbage collection) while playing.
     this.dropsPerSecond = opts.dropsPerSecond || 60;
     this.dropGain = opts.dropGain ?? 1;
-    this.drops = [];
+    this.dropCount = 0;
+    this.dropStart = new Int32Array(MAX_DROPS);
+    this.dropEnv = new Float32Array(MAX_DROPS);
+    this.dropDecay = new Float32Array(MAX_DROPS);
+    this.dropLeft = new Float32Array(MAX_DROPS);
+    this.dropRight = new Float32Array(MAX_DROPS);
   }
 
   spawnDrops(frames) {
     const chance = this.dropsPerSecond / sampleRate;
     for (let i = 0; i < frames; i++) {
-      if (Math.random() < chance && this.drops.length < 48) {
+      if (Math.random() < chance && this.dropCount < MAX_DROPS) {
+        const n = this.dropCount++;
         const size = Math.random();
-        this.drops.push({
-          start: i,
-          env: (0.15 + 0.85 * size * size) * this.dropGain,
-          // decay per sample: bigger drops ring a little longer (≈6–30 ms)
-          decay: Math.exp(-1 / (sampleRate * (0.006 + 0.024 * size))),
-          pan: Math.random(),
-        });
+        const pan = Math.random() * Math.PI * 0.5;
+        this.dropStart[n] = i;
+        this.dropEnv[n] = (0.15 + 0.85 * size * size) * this.dropGain;
+        // decay per sample: bigger drops ring a little longer (≈6–30 ms)
+        this.dropDecay[n] = Math.exp(-1 / (sampleRate * (0.006 + 0.024 * size)));
+        this.dropLeft[n] = Math.cos(pan);
+        this.dropRight[n] = Math.sin(pan);
       }
     }
+  }
+
+  // Removes drop n by moving the last drop into its slot.
+  removeDrop(n) {
+    const last = --this.dropCount;
+    this.dropStart[n] = this.dropStart[last];
+    this.dropEnv[n] = this.dropEnv[last];
+    this.dropDecay[n] = this.dropDecay[last];
+    this.dropLeft[n] = this.dropLeft[last];
+    this.dropRight[n] = this.dropRight[last];
   }
 
   process(_inputs, outputs) {
@@ -81,6 +111,9 @@ class NoiseProcessor extends AudioWorkletProcessor {
         case 'brown':
           for (let i = 0; i < frames; i++) data[i] = s.brown(Math.random() * 2 - 1);
           break;
+        case 'blue':
+          for (let i = 0; i < frames; i++) data[i] = s.blue(Math.random() * 2 - 1);
+          break;
         case 'rain':
           for (let i = 0; i < frames; i++) data[i] = s.pink(Math.random() * 2 - 1) * 0.55;
           break;
@@ -89,20 +122,30 @@ class NoiseProcessor extends AudioWorkletProcessor {
       }
     }
 
-    if (rain && this.drops.length) {
+    if (rain && this.dropCount) {
       const stereo = output.length > 1;
-      for (const drop of this.drops) {
-        const left = stereo ? Math.cos(drop.pan * Math.PI * 0.5) : 1;
-        const right = Math.sin(drop.pan * Math.PI * 0.5);
-        for (let i = drop.start; i < frames; i++) {
-          const v = (Math.random() * 2 - 1) * drop.env;
-          output[0][i] += v * left;
-          if (stereo) output[1][i] += v * right;
-          drop.env *= drop.decay;
+      const outL = output[0];
+      const outR = stereo ? output[1] : null;
+      let n = 0;
+      while (n < this.dropCount) {
+        let env = this.dropEnv[n];
+        const decay = this.dropDecay[n];
+        const left = stereo ? this.dropLeft[n] : 1;
+        const right = this.dropRight[n];
+        for (let i = this.dropStart[n]; i < frames; i++) {
+          const v = (Math.random() * 2 - 1) * env;
+          outL[i] += v * left;
+          if (outR) outR[i] += v * right;
+          env *= decay;
         }
-        drop.start = 0;
+        if (env > 0.001) {
+          this.dropEnv[n] = env;
+          this.dropStart[n] = 0;
+          n++;
+        } else {
+          this.removeDrop(n); // the swapped-in drop is processed next, at the same n
+        }
       }
-      this.drops = this.drops.filter((d) => d.env > 0.001);
     }
     return true;
   }

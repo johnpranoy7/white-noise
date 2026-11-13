@@ -2,10 +2,10 @@
 
 Noise and nature sounds for focus and sleep, generated live in the browser.
 
-- **Noise:** white, pink, brown, grey and deep brown, synthesised in an AudioWorklet. No audio files, and it never repeats.
+- **Noise:** blue, white, grey, pink, green, brown and deep brown, synthesised in an AudioWorklet. No audio files, and it never repeats.
 - **Nature:** rain, stream, ocean and breeze, tuned to be soft and slow for sleep. Synthesised by default; drop in a CC0 recording to replace any of them.
 - **One sound at a time.** Nothing plays until you pick one. Sounds swell in over about 1.6 s, switching crossfades, and picking the playing sound pauses it.
-- **Keyboard:** `Space` plays/pauses, `1`–`9` pick a sound.
+- **Keyboard:** `Space` plays/pauses, `1`–`7` pick a noise, `Q` `W` `E` `R` pick a nature sound.
 - **Sleep timer** that fades out over its last stretch instead of cutting off, and a **focus timer** (25/5 or 50/10) that lowers the sound during breaks.
 - Keeps playing with the phone locked, with lock-screen controls (Media Session). Installable as a PWA.
 
@@ -34,10 +34,10 @@ npm run dev
 ```
 src/
   audio/
-    noise-processor.js   AudioWorklet: stereo white/pink/brown noise and the rain texture
+    noise-processor.js   AudioWorklet: stereo white/pink/brown/blue noise and the rain texture
     layers.ts            Builds each sound from noise (filters, slow LFOs) or loads a recording
     engine.ts            Owns the Web Audio graph, fades, timers and lock-screen controls
-    sounds.ts            The list of sounds: names, colors, descriptions
+    sounds.ts            The list of sounds: names, keys, colors, descriptions
   state/store.ts         App state (Zustand): current sound, playback, volume, timers
   components/            Sound grid, player, slider, icons
   App.tsx, styles.css    Layout and styling

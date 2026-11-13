@@ -15,6 +15,21 @@ const SMOOTH = 0.08; // seconds, time constant for volume slider changes
 const FADE_IN = 1.6; // seconds for a sound to rise to full volume
 const FADE_OUT = 1.2; // seconds for the previous sound to fade when switching
 const PAUSE_FADE = 0.4;
+/**
+ * Fade-ins wait this long before rising, so any hiccup while a new sound spins up
+ * (first worklet calls, layout work on the page) happens while it is still silent.
+ */
+const FADE_IN_DELAY = 0.15;
+
+/**
+ * Phones and tablets need the MediaStream → <audio> route to keep playing with the
+ * screen locked. Desktops don't, and that route can stutter while its buffer settles,
+ * so they go straight to the speakers. iPadOS reports itself as a Mac, hence the
+ * touch-point check.
+ */
+const HANDHELD =
+  /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+  (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
 
 /**
  * Freezes `param` at its current value and drops anything scheduled after now, so new
@@ -36,7 +51,7 @@ function hold(param: AudioParam, now: number) {
  * Glides `param` to `target` along a raised-cosine S-curve: it starts gently, so a
  * sound swells in rather than arriving at full level.
  */
-function ease(ctx: BaseAudioContext, param: AudioParam, target: number, seconds: number) {
+function ease(ctx: BaseAudioContext, param: AudioParam, target: number, seconds: number, delay = 0) {
   const now = ctx.currentTime;
   const from = hold(param, now);
   const curve = new Float32Array(64);
@@ -45,7 +60,7 @@ function ease(ctx: BaseAudioContext, param: AudioParam, target: number, seconds:
     curve[i] = from + (target - from) * (0.5 - 0.5 * Math.cos(Math.PI * t));
   }
   // A tiny offset keeps the curve from touching the held point (overlap throws).
-  param.setValueCurveAtTime(curve, now + 0.005, seconds);
+  param.setValueCurveAtTime(curve, now + 0.005 + delay, seconds);
 }
 
 /**
@@ -53,11 +68,12 @@ function ease(ctx: BaseAudioContext, param: AudioParam, target: number, seconds:
  * fades the old layer out and swells the new one in over about a second and a half.
  *
  *   layer → mix → master (user volume) → duck (focus breaks) → sleep (sleep timer)
- *          → limiter → MediaStream → <audio>
+ *          → limiter → speakers                    (desktop)
+ *          → limiter → MediaStream → <audio>       (phones and tablets)
  *
- * The final hop through an <audio> element is what keeps iOS playing with the screen
- * locked and what gives the lock screen its controls. If the element can't play, the
- * limiter is connected straight to the speakers instead.
+ * On handhelds the hop through an <audio> element is what keeps playback going with
+ * the screen locked and gives the lock screen its controls. If the element can't play,
+ * the limiter is connected straight to the speakers instead.
  */
 class AudioEngine {
   private ctx?: AudioContext;
@@ -76,17 +92,35 @@ class AudioEngine {
   /** Called when the lock screen or a headset button asks to play or pause. */
   onRemoteToggle: (play: boolean) => void = () => {};
 
+  /**
+   * Fetches the worklet and the recordings manifest ahead of time so they are cached
+   * by the first click. Needs no user gesture.
+   */
+  prefetch() {
+    void fetch(workletUrl).catch(() => {});
+    void loadManifest();
+  }
+
+  /**
+   * Creates the audio context and starts loading the worklet. Call it from the first
+   * pointerdown or keydown: that counts as a user gesture, and it lands a moment
+   * before the click that actually starts a sound.
+   */
+  warm() {
+    this.ensureContext();
+  }
+
   /** Must run inside a user gesture (click/tap): browsers only allow audio to start there. */
   start() {
     const ctx = this.ensureContext();
     this.playing = true;
     // Both calls happen synchronously in the gesture; the worklet loads afterwards.
     void ctx.resume();
-    this.element.play().catch(() => this.useDirectOutput());
+    if (!this.directOutput) this.element.play().catch(() => this.useDirectOutput());
     const resuming = this.current && this.layers.get(this.current)?.source;
     if (resuming) {
       // The layer is still at full level from before the pause; swell the output instead.
-      ease(ctx, this.sleep.gain, 1, FADE_IN);
+      ease(ctx, this.sleep.gain, 1, FADE_IN, FADE_IN_DELAY);
     } else {
       // A new layer swells itself in once its source is ready (see createLayer).
       hold(this.sleep.gain, ctx.currentTime);
@@ -104,7 +138,7 @@ class AudioEngine {
     ease(ctx, this.sleep.gain, 0, PAUSE_FADE);
     await new Promise((r) => setTimeout(r, PAUSE_FADE * 1000 + 50));
     if (this.playing) return;
-    this.element.pause();
+    if (!this.directOutput) this.element.pause();
     await ctx.suspend();
   }
 
@@ -188,7 +222,7 @@ class AudioEngine {
     });
     this.mix.connect(this.master).connect(this.duck).connect(this.sleep).connect(this.limiter);
 
-    if ('MediaStreamAudioDestinationNode' in window) {
+    if (HANDHELD && 'MediaStreamAudioDestinationNode' in window) {
       const dest = new MediaStreamAudioDestinationNode(ctx);
       this.limiter.connect(dest);
       this.element.srcObject = dest.stream;
@@ -209,7 +243,7 @@ class AudioEngine {
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && this.playing && ctx.state !== 'running') {
         void ctx.resume();
-        void this.element.play().catch(() => {});
+        if (!this.directOutput) void this.element.play().catch(() => {});
       }
     });
     return ctx;
@@ -234,7 +268,7 @@ class AudioEngine {
         clearTimeout(existing.disposeTimer);
         existing.disposeTimer = undefined;
         // Coming back to a sound that was fading out: swell it back up from where it is.
-        if (existing.source) ease(ctx, existing.gain.gain, 1, FADE_IN);
+        if (existing.source) ease(ctx, existing.gain.gain, 1, FADE_IN, FADE_IN_DELAY);
       }
     }
     for (const [id, layer] of this.layers) {
@@ -258,7 +292,7 @@ class AudioEngine {
       }
       layer.source = recorded ?? createProcedural(ctx, id);
       layer.source.output.connect(layer.gain);
-      if (this.current === id) ease(ctx, layer.gain.gain, 1, FADE_IN);
+      if (this.current === id) ease(ctx, layer.gain.gain, 1, FADE_IN, FADE_IN_DELAY);
     });
     return layer;
   }

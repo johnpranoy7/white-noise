@@ -22,7 +22,7 @@ flowchart LR
 
 | Part | File | Role |
 | --- | --- | --- |
-| Noise generator | `src/audio/noise-processor.js` | AudioWorklet producing stereo white, pink and brown noise and the rain texture |
+| Noise generator | `src/audio/noise-processor.js` | AudioWorklet producing stereo white, pink, brown and blue noise and the rain texture |
 | Sound builders | `src/audio/layers.ts` | Shapes each sound from noise with filters and slow LFOs, or loads a recording |
 | Engine | `src/audio/engine.ts` | Owns the Web Audio graph, fades, timers and the Media Session |
 | Store | `src/state/store.ts` | App state: current sound, playing, volume, timers |
@@ -45,15 +45,21 @@ current sound ─▶ master (volume) ─▶ duck (focus breaks) ─▶ sleep (fa
 
 ### Noise (generated)
 
+Listed brightest to darkest, the order they appear in the grid:
+
 | Sound | How it's made |
 | --- | --- |
+| Blue | First difference of pink noise: differencing adds +6 dB/octave, so −3 becomes +3 dB/octave |
 | White | Uniform random samples |
-| Pink | White noise through Paul Kellet's filter (−3 dB/octave) |
-| Brown | Leaky integration of white noise (−6 dB/octave) |
 | Grey | White noise shaped by an inverted equal-loudness curve (lows and highs lifted, 2–5 kHz dipped) |
+| Pink | White noise through Paul Kellet's filter (−3 dB/octave) |
+| Green | Pink noise band-limited to about 120 Hz–1.8 kHz with a gentle lift near 500 Hz |
+| Brown | Leaky integration of white noise (−6 dB/octave) |
 | Deep brown | Brown noise low-passed at 160 Hz |
 
-Each stereo channel has its own generator, so the sound is wide rather than centred. "Black noise" isn't offered: it usually means silence.
+Each stereo channel has its own generator, so the sound is wide rather than centred.
+
+Left out on purpose: **violet** (+6 dB/octave) is harsh and mostly used for tinnitus masking; **black** usually means silence; **orange** has no agreed definition.
 
 ### Nature (generated, replaceable by recordings)
 
@@ -70,12 +76,12 @@ A recording listed in `public/sounds/manifest.json` replaces the synthesised ver
 
 ### Levels
 
-Every sound is trimmed to about −16 dB RMS at full volume, measured by rendering each one offline. Deep brown sits about 2 dB higher because low sounds feel quieter to the ear. The volume slider is squared before it reaches the gain, so it feels even.
+Every sound is trimmed to about −16 dB RMS at full volume, measured by rendering each one offline. Deep brown sits about 2 dB higher because low sounds feel quieter to the ear, and blue about 1.5 dB lower because its energy sits where the ear is most sensitive. The volume slider is squared before it reaches the gain, so it feels even.
 
 ## Interaction design
 
 - **Nothing plays on load.** No sound is preselected, and the play button is disabled until a sound is chosen. Only the volume is remembered between visits.
-- **The tile is the control.** Tapping a tile plays it; tapping the playing tile pauses it; tapping another switches. Number keys 1–9 match the numbers on the tiles.
+- **The tile is the control.** Tapping a tile plays it; tapping the playing tile pauses it; tapping another switches. Each tile shows its key: `1`–`7` for noise and `Q` `W` `E` `R` for nature.
 - **No mixing.** Generated noise and recorded nature sounds don't blend well, and choosing one sound is calmer than balancing several.
 - **Timers live in a popover**, anchored to the Timer button on desktop and shown as a sheet above the dock on phones. Running timers appear as countdown pills that cancel when tapped.
 
@@ -85,7 +91,7 @@ Every sound is trimmed to about −16 dB RMS at full volume, measured by renderi
 - **Color:** a warm near-black (dark mode) or paper off-white (light mode). The page background takes on a faint tint of the selected sound, animated through a registered `@property`.
 - **Noise tiles** are swatches in each noise's color, textured with fine vertical lines made from SVG turbulence (high horizontal, near-zero vertical frequency) and a light film grain. The lines drift slowly while the sound plays.
 - **Nature tiles** are soft gradients with a line icon.
-- **Layout:** two columns on desktop (a sticky stage on the left, the sound grid on the right). On phones the player becomes a floating dock at the bottom.
+- **Layout:** two columns on desktop (a sticky stage on the left, the sound grid on the right). Noise tiles sit four over three, sized from the grid's width with container query units so both rows are the same height. On phones the player becomes a floating dock at the bottom.
 - **Motion** is slow and optional: everything respects `prefers-reduced-motion`.
 
 ## Deployment

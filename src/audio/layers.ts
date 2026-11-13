@@ -6,7 +6,7 @@ export interface Source {
   stop(): void;
 }
 
-type NoiseColor = 'white' | 'pink' | 'brown' | 'rain';
+type NoiseColor = 'white' | 'pink' | 'brown' | 'blue' | 'rain';
 
 function noise(ctx: AudioContext, color: NoiseColor, extra: Record<string, number> = {}) {
   return new AudioWorkletNode(ctx, 'noise-processor', {
@@ -55,9 +55,12 @@ function stopAll(nodes: AudioNode[]) {
 /**
  * Output trim per sound so each sits near -16 dB RMS at full volume (measured by
  * rendering each one offline). Deep brown is left ~2 dB hotter because low sounds
- * read quieter to the ear.
+ * read quieter to the ear; blue ~1.5 dB softer because its energy sits where the
+ * ear is most sensitive.
  */
 const LEVEL: Record<SoundId, number> = {
+  blue: 1.2,
+  green: 1.05,
   white: 0.55,
   pink: 0.82,
   brown: 0.79,
@@ -79,6 +82,19 @@ export function createProcedural(ctx: AudioContext, id: SoundId): Source {
   let output: AudioNode;
 
   switch (id) {
+    case 'blue':
+      output = keep(noise(ctx, 'blue'));
+      break;
+    case 'green':
+      // Pink noise kept to roughly 120 Hz–1.8 kHz with a gentle lift around 500 Hz:
+      // the broad middle hum of the outdoors, without deep rumble or hiss.
+      output = chain(
+        keep(noise(ctx, 'pink')),
+        keep(filter(ctx, 'highpass', 120, 0.5)),
+        keep(filter(ctx, 'lowpass', 1800, 0.5)),
+        keep(filter(ctx, 'peaking', 500, 0.7, 3)),
+      );
+      break;
     case 'white':
       output = keep(noise(ctx, 'white'));
       break;

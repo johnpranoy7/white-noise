@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { SOUNDS, soundById } from './audio/sounds';
+import { soundById, soundByKey } from './audio/sounds';
 import { Player } from './components/Player';
 import { SoundGrid } from './components/SoundGrid';
 import { useStore } from './state/store';
@@ -20,7 +20,7 @@ export default function App() {
     return () => clearInterval(id);
   }, [tick]);
 
-  // Space plays/pauses, 1–9 pick a sound. Ignored while typing or on a focused control.
+  // Space plays/pauses; 1–7 pick a noise, Q W E R a nature sound. Ignored while typing.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -30,8 +30,8 @@ export default function App() {
       if (e.code === 'Space' && !el.closest('button')) {
         e.preventDefault();
         togglePlay();
-      } else if (/^[1-9]$/.test(e.key)) {
-        const target = SOUNDS[Number(e.key) - 1];
+      } else {
+        const target = soundByKey(e.key);
         if (target) select(target.id);
       }
     };
@@ -52,7 +52,7 @@ export default function App() {
       <header className="topbar">
         <span className="wordmark">whitenoise</span>
         <span className="topbar-note">
-          <kbd>Space</kbd> play · <kbd>1</kbd>–<kbd>9</kbd> choose
+          <kbd>Space</kbd> play · <kbd>1</kbd>–<kbd>7</kbd> noise · <kbd>Q</kbd>–<kbd>R</kbd> nature
         </span>
       </header>
 
