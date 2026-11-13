@@ -65,13 +65,7 @@ export default function App() {
       style={{ '--tone': sound?.tone ?? 'var(--neutral-tone)' } as React.CSSProperties}
     >
       <header className="topbar">
-        <div className="brand">
-          <h1 className="wordmark">whitenoise</h1>
-          <a className="byline" href={DEVELOPER.site} target="_blank" rel="author noopener">
-            by {DEVELOPER.name}
-            <span aria-hidden="true"> ↗</span>
-          </a>
-        </div>
+        <h1 className="wordmark">whitenoise</h1>
         <div className="topbar-end">
           <span className="topbar-note">
             <kbd>Space</kbd> play · <kbd>1</kbd>–<kbd>7</kbd> noise · <kbd>Q</kbd>–<kbd>U</kbd> nature

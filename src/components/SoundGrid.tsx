@@ -44,6 +44,7 @@ function Tile({ sound, index }: { sound: SoundDef; index: number }) {
       onClick={() => select(sound.id)}
     >
       <span className="tile-swatch">
+        <span className="tile-fill" aria-hidden="true" />
         {sound.group === 'nature' && (
           <span className="tile-glyph">
             <Icon name={sound.id as 'rain' | 'stream' | 'ocean' | 'wind' | 'underwater' | 'fire' | 'crickets'} size={28} />
