@@ -15,8 +15,8 @@ const SECTIONS: { title: string; body: string }[] = [
   {
     title: 'Nature sounds',
     body:
-      'Rain, stream, ocean and breeze are tuned to be soft and slow: no sharp drops, no whistling wind, ' +
-      'and waves that roll in about every twelve seconds.',
+      'Rain, stream, ocean, breeze, underwater, campfire and crickets are tuned to be soft and slow: ' +
+      'no sharp drops, no whistling wind, gentle crackles, and waves that roll in about every twelve seconds.',
   },
   {
     title: 'Timers',

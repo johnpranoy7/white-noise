@@ -46,7 +46,7 @@ function Tile({ sound, index }: { sound: SoundDef; index: number }) {
       <span className="tile-swatch">
         {sound.group === 'nature' && (
           <span className="tile-glyph">
-            <Icon name={sound.id as 'rain' | 'stream' | 'ocean' | 'wind'} size={28} />
+            <Icon name={sound.id as 'rain' | 'stream' | 'ocean' | 'wind' | 'underwater' | 'fire' | 'crickets'} size={28} />
           </span>
         )}
         <span className="eq" aria-hidden="true">

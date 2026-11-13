@@ -9,7 +9,10 @@ export type SoundId =
   | 'rain'
   | 'stream'
   | 'ocean'
-  | 'wind';
+  | 'wind'
+  | 'underwater'
+  | 'fire'
+  | 'crickets';
 
 export type SoundGroup = 'noise' | 'nature';
 
@@ -126,6 +129,33 @@ export const SOUNDS: SoundDef[] = [
     hint: 'Soft air moving through the trees.',
     swatch: 'linear-gradient(160deg, #ccd3c2 0%, #7f8c78 100%)',
     tone: '#bcc7b0',
+  },
+  {
+    id: 'underwater',
+    name: 'Underwater',
+    group: 'nature',
+    key: 'T',
+    hint: 'A deep, muffled rush with the occasional soft bubble.',
+    swatch: 'linear-gradient(160deg, #3b9bb5 0%, #0a2c3d 100%)',
+    tone: '#5fb3c9',
+  },
+  {
+    id: 'fire',
+    name: 'Campfire',
+    group: 'nature',
+    key: 'Y',
+    hint: 'A crackling campfire outdoors, with the night air moving around it.',
+    swatch: 'linear-gradient(160deg, #e0894a 0%, #5a2410 100%)',
+    tone: '#e39a62',
+  },
+  {
+    id: 'crickets',
+    name: 'Crickets',
+    group: 'nature',
+    key: 'U',
+    hint: 'Crickets on a warm summer night.',
+    swatch: 'linear-gradient(160deg, #6b6a9e 0%, #1b1a33 100%)',
+    tone: '#8f8ec0',
   },
 ];
 

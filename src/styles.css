@@ -130,6 +130,29 @@ kbd {
   letter-spacing: -0.01em;
 }
 
+.brand {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 12px;
+  min-width: 0;
+}
+
+/* Quiet credit beside the wordmark; links to the developer's site. */
+.byline {
+  color: var(--muted);
+  font-size: 13px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+
+.byline:hover {
+  color: var(--fg);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .topbar-end {
   display: flex;
   align-items: center;
@@ -631,32 +654,28 @@ kbd {
   gap: var(--grid-gap);
 }
 
-/* Noise: four tiles over three wider ones, all the same height, reading bright to dark. */
-.grid-noise {
+/* Both groups: four tiles over three wider ones, all the same height. Noise reads bright to dark. */
+.grid-noise,
+.grid-nature {
   grid-template-columns: repeat(12, minmax(0, 1fr));
   container-type: inline-size;
 }
 
-.grid-noise .tile {
+.grid-noise .tile,
+.grid-nature .tile {
   grid-column: span 3;
 }
 
-.grid-noise .tile:nth-child(n + 5) {
+.grid-noise .tile:nth-child(n + 5),
+.grid-nature .tile:nth-child(n + 5) {
   grid-column: span 4;
 }
 
 /* Every swatch is as tall as a top-row tile is wide (square on top, wider below),
    sized from the grid's width so gaps can't make the rows drift apart. */
-.grid-noise .tile-swatch {
-  height: calc((100cqw - 3 * var(--grid-gap)) / 4);
-}
-
-.grid-nature {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
+.grid-noise .tile-swatch,
 .grid-nature .tile-swatch {
-  aspect-ratio: 4 / 5;
+  height: calc((100cqw - 3 * var(--grid-gap)) / 4);
 }
 
 /* ---------- tile ---------- */
@@ -922,6 +941,24 @@ kbd {
   font-size: 13px;
 }
 
+.footer a {
+  color: var(--fg);
+  text-decoration: underline;
+  text-decoration-color: var(--line-strong);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.2s;
+}
+
+.footer a:hover {
+  text-decoration-color: currentColor;
+}
+
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
 /* ---------- responsive ---------- */
 
 @media (max-width: 960px) {
@@ -1029,14 +1066,6 @@ kbd {
     inset: auto 12px calc(84px + env(safe-area-inset-bottom)) 12px;
     width: auto;
     margin: 0;
-  }
-
-  .grid-nature {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .grid-nature .tile-swatch {
-    aspect-ratio: 4 / 3;
   }
 
   .grid {

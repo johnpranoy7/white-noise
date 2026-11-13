@@ -6,6 +6,13 @@ import { Settings } from './components/Settings';
 import { SoundGrid } from './components/SoundGrid';
 import { useStore } from './state/store';
 
+const DEVELOPER = {
+  name: 'John Pranoy Yalla',
+  site: 'https://johnpranoy7.dev',
+  projects: 'https://johnpranoy7.dev/projects',
+  source: 'https://github.com/johnpranoy7/white-noise',
+};
+
 export default function App() {
   const current = useStore((s) => s.current);
   const playing = useStore((s) => s.playing);
@@ -23,7 +30,7 @@ export default function App() {
     return () => clearInterval(id);
   }, [tick]);
 
-  // Space plays/pauses; 1–7 pick a noise, Q W E R a nature sound. Ignored while typing.
+  // Space plays/pauses; 1–7 pick a noise, Q–U a nature sound. Ignored while typing.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
@@ -58,10 +65,16 @@ export default function App() {
       style={{ '--tone': sound?.tone ?? 'var(--neutral-tone)' } as React.CSSProperties}
     >
       <header className="topbar">
-        <h1 className="wordmark">whitenoise</h1>
+        <div className="brand">
+          <h1 className="wordmark">whitenoise</h1>
+          <a className="byline" href={DEVELOPER.site} target="_blank" rel="author noopener">
+            by {DEVELOPER.name}
+            <span aria-hidden="true"> ↗</span>
+          </a>
+        </div>
         <div className="topbar-end">
           <span className="topbar-note">
-            <kbd>Space</kbd> play · <kbd>1</kbd>–<kbd>7</kbd> noise · <kbd>Q</kbd>–<kbd>R</kbd> nature
+            <kbd>Space</kbd> play · <kbd>1</kbd>–<kbd>7</kbd> noise · <kbd>Q</kbd>–<kbd>U</kbd> nature
           </span>
           <Settings />
         </div>
@@ -89,9 +102,22 @@ export default function App() {
 
       <About />
 
+      {/* External links open in a new tab so they don't stop whatever is playing. */}
       <footer className="footer">
-        <span>Generated in your browser with the Web Audio API.</span>
-        <span>Keeps playing with your phone locked.</span>
+        <span>
+          Made by{' '}
+          <a href={DEVELOPER.site} target="_blank" rel="author noopener">
+            {DEVELOPER.name}
+          </a>
+        </span>
+        <nav className="footer-links" aria-label="More from the developer">
+          <a href={DEVELOPER.projects} target="_blank" rel="noopener">
+            More projects <span aria-hidden="true">→</span>
+          </a>
+          <a href={DEVELOPER.source} target="_blank" rel="noopener">
+            Source on GitHub
+          </a>
+        </nav>
       </footer>
     </div>
   );

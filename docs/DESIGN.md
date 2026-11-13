@@ -71,6 +71,11 @@ These are tuned for relaxation: dark (most energy below ~2.5 kHz), slow movement
 | Stream | Two broad, gently drifting bands over a low bed |
 | Ocean | One slow LFO opens the filter and raises the level together (a wave every ~12 s); a slower one varies wave size |
 | Breeze | A wide, low band drifting very slowly, with a soft low bed |
+| Underwater | A deep, muffled rush that swells slowly, with occasional soft bubbles (short sines that rise in pitch as they fade) |
+| Campfire | A flickering, airy low roar, a faint hiss, and sparse soft crackles kept near the centre and low-passed so none are sharp |
+| Crickets | Five crickets at different distances, each chirping 3–4 smooth pulses of a 4–5 kHz tone at its own rhythm, over quiet night air; kept about 5 dB under the other sounds |
+
+Left out on purpose: **lake shore** (tried, but Crickets was preferred), **cat purr** (tried; the synthesised pulses sounded like helicopter blades), **thunder** (sudden rumbles), **cave drips** (random and startling), **waterfall** and **heavy rain** (too close to brown noise and Rain), and **birdsong / forest** (only convincing as real recordings).
 
 A recording listed in `public/sounds/manifest.json` replaces the synthesised version. Recordings get a 2 s equal-power crossfade baked into the loop point (no seam) and are normalised to the same loudness.
 
@@ -81,7 +86,7 @@ Every sound is trimmed to about −16 dB RMS at full volume, measured by renderi
 ## Interaction design
 
 - **Nothing plays on load.** No sound is preselected, and the play button is disabled until a sound is chosen. Only the volume is remembered between visits.
-- **The tile is the control.** Tapping a tile plays it; tapping the playing tile pauses it; tapping another switches. Each tile shows its key: `1`–`7` for noise and `Q` `W` `E` `R` for nature.
+- **The tile is the control.** Tapping a tile plays it; tapping the playing tile pauses it; tapping another switches. Each tile shows its key: `1`–`7` for noise and `Q`–`U` for nature.
 - **No mixing.** Generated noise and recorded nature sounds don't blend well, and choosing one sound is calmer than balancing several.
 - **Timers live in a popover**, anchored to the Timer button on desktop and shown as a sheet above the dock on phones. Running timers appear as countdown pills that cancel when tapped.
 
@@ -98,7 +103,7 @@ Every sound is trimmed to about −16 dB RMS at full volume, measured by renderi
 
 - **Image:** multi-stage Dockerfile. Node builds the static site; `nginxinc/nginx-unprivileged` serves it on port 8080 as a non-root user, with a `/healthz` health check.
 - **nginx:** long-lived caching for hashed assets, no-cache for the app shell and service worker, correct audio MIME types, gzip, and a strict Content-Security-Policy. `FRAME_ANCESTORS` controls which sites may embed the app.
-- **CI:** GitHub Actions builds amd64 and arm64 images on every push to `main` and pushes `latest` and `sha-<commit>` tags to GHCR. An optional `DEPLOY_WEBHOOK` secret triggers a redeploy.
+- **CI:** GitHub Actions builds amd64 and arm64 images on every push to `main` and pushes `latest`, `sha-<commit>` and branch tags to Docker Hub (`johnpranoy7/white-noise`, when its secrets are set) and GHCR. An optional `DEPLOY_WEBHOOK` secret triggers a redeploy.
 - **Hosting:** any container host; put it behind HTTPS (reverse proxy, tunnel or CDN), which the service worker and background playback need.
 
 ## Known limits and next steps

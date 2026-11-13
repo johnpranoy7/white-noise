@@ -6,7 +6,15 @@ export interface Source {
   stop(): void;
 }
 
-type NoiseColor = 'white' | 'pink' | 'brown' | 'blue' | 'rain';
+type NoiseColor =
+  | 'white'
+  | 'pink'
+  | 'brown'
+  | 'blue'
+  | 'rain'
+  | 'crackle'
+  | 'bubbles'
+  | 'crickets';
 
 function noise(ctx: AudioContext, color: NoiseColor, extra: Record<string, number> = {}) {
   return new AudioWorkletNode(ctx, 'noise-processor', {
@@ -70,6 +78,10 @@ const LEVEL: Record<SoundId, number> = {
   stream: 1.37,
   ocean: 1.05,
   wind: 1.76,
+  underwater: 0.85,
+  fire: 1,
+  // ~5 dB under the rest: steady 4–5 kHz tones sit where the ear is most sensitive.
+  crickets: 2,
 };
 
 /**
@@ -179,6 +191,59 @@ export function createProcedural(ctx: AudioContext, id: SoundId): Source {
       nodes.push(lfo(ctx, 0.071, 60, bp.frequency, 0.3));
       nodes.push(lfo(ctx, 0.045, 0.3, amp.gain, 0.3));
       output = amp;
+      break;
+    }
+    case 'underwater': {
+      // Heard from below the surface: a deep, muffled rush that swells slowly, with
+      // the occasional soft bubble drifting past.
+      const amp = keep(gain(ctx, 0.9));
+      const lp = keep(filter(ctx, 'lowpass', 320, 0.7));
+      chain(keep(noise(ctx, 'brown')), lp, amp);
+      nodes.push(lfo(ctx, 0.05, 80, lp.frequency, 0.3));
+      nodes.push(lfo(ctx, 0.037, 0.15, amp.gain, 0.3));
+      chain(
+        keep(noise(ctx, 'bubbles', { bubblesPerSecond: 1.6 })),
+        keep(filter(ctx, 'lowpass', 1400, 0.5)),
+        keep(gain(ctx, 0.35)),
+        amp,
+      );
+      output = amp;
+      break;
+    }
+    case 'fire': {
+      // A campfire outdoors: a low, airy roar that flickers, a faint hiss, and soft
+      // crackles kept near the middle. The crackles are low-passed so none are sharp.
+      const mix = keep(gain(ctx, 1));
+      const roar = keep(gain(ctx, 0.8));
+      chain(keep(noise(ctx, 'brown')), keep(filter(ctx, 'lowpass', 600, 0.5)), roar, mix);
+      nodes.push(lfo(ctx, 0.11, 0.12, roar.gain, 0.3));
+      nodes.push(lfo(ctx, 0.37, 0.06, roar.gain, 0.3));
+      chain(keep(noise(ctx, 'pink')), keep(filter(ctx, 'bandpass', 2500, 0.6)), keep(gain(ctx, 0.06)), mix);
+      chain(
+        keep(
+          noise(ctx, 'crackle', {
+            dropsPerSecond: 9,
+            dropGain: 0.9,
+            bedLevel: 0,
+            decayMin: 0.0015,
+            decayRange: 0.006,
+            panWidth: 0.35,
+          }),
+        ),
+        keep(filter(ctx, 'lowpass', 3800, 0.5)),
+        keep(gain(ctx, 0.5)),
+        mix,
+      );
+      output = mix;
+      break;
+    }
+    case 'crickets': {
+      // A few crickets at different distances over a quiet night-air bed. Their
+      // tones are kept soft; high steady pitches can bother some listeners.
+      const mix = keep(gain(ctx, 1));
+      chain(keep(noise(ctx, 'crickets', { count: 5 })), keep(filter(ctx, 'lowpass', 6500, 0.5)), mix);
+      chain(keep(noise(ctx, 'pink')), keep(filter(ctx, 'lowpass', 500, 0.5)), keep(gain(ctx, 0.15)), mix);
+      output = mix;
       break;
     }
     default:
