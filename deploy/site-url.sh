@@ -10,7 +10,7 @@ url="${url%/}"
 
 if [ -n "$url" ]; then
   sed -i "s|__SITE_URL__|$url|g" "$html/index.html"
-  printf 'User-agent: *\nAllow: /\n\nSitemap: %s/sitemap.xml\n' "$url" > "$html/robots.txt"
+  printf 'User-agent: *\nAllow: /\nDisallow: /lab/\n\nSitemap: %s/sitemap.xml\n' "$url" > "$html/robots.txt"
   cat > "$html/sitemap.xml" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -24,7 +24,7 @@ EOF
 else
   # Without a public address, drop the tags that need an absolute URL.
   sed -i '/__SITE_URL__/d' "$html/index.html"
-  printf 'User-agent: *\nAllow: /\n' > "$html/robots.txt"
+  printf 'User-agent: *\nAllow: /\nDisallow: /lab/\n' > "$html/robots.txt"
   rm -f "$html/sitemap.xml"
   echo "site-url: SITE_URL not set; canonical, Open Graph URL and sitemap left out"
 fi

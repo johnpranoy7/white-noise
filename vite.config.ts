@@ -31,7 +31,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,woff2}'],
-        navigateFallbackDenylist: [/^\/healthz/, /^\/sounds\//],
+        // lab/ holds test pages that aren't part of the app
+        globIgnores: ['lab/**'],
+        navigateFallbackDenylist: [/^\/healthz/, /^\/sounds\//, /^\/lab\//],
         runtimeCaching: [
           {
             // Nature recordings are large, so they are cached the first time they play

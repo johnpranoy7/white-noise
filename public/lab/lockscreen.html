@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Lock-screen test · Whitenoise</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 24px 16px 48px;
+        background: #0e0e0d;
+        color: #f2f0ea;
+        font: 16px/1.5 system-ui, -apple-system, sans-serif;
+      }
+      h1 { font-size: 22px; margin: 0 0 8px; }
+      p { color: #8f8b82; margin: 0 0 16px; }
+      button {
+        display: block;
+        width: 100%;
+        margin: 0 0 12px;
+        padding: 14px 16px;
+        border: 1px solid rgb(242 240 234 / 0.25);
+        border-radius: 14px;
+        background: #191917;
+        color: inherit;
+        font: inherit;
+        text-align: left;
+      }
+      button strong { display: block; }
+      button span { color: #8f8b82; font-size: 14px; }
+      #stop { background: #f2f0ea; color: #0e0e0d; text-align: center; font-weight: 600; }
+      pre {
+        white-space: pre-wrap;
+        background: #191917;
+        border-radius: 12px;
+        padding: 12px;
+        font-size: 13px;
+        color: #c9c5bc;
+        min-height: 4em;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Lock-screen test</h1>
+    <p>
+      Tap one option, wait for the soft noise, then lock the phone. Check whether the lock screen
+      shows <strong>"Test A"</strong> (or B, C, D) with a pink picture, and whether the sound keeps
+      playing for 30 seconds. Then unlock, tap Stop, and try the next one.
+    </p>
+
+    <button data-variant="A">
+      <strong>A · Live stream (what the app does now)</strong>
+      <span>Generated sound through a stream into an audio element.</span>
+    </button>
+    <button data-variant="B">
+      <strong>B · Direct + silent audio file</strong>
+      <span>Generated sound straight to the speakers, plus a silent looping audio file.</span>
+    </button>
+    <button data-variant="C">
+      <strong>C · Live stream + silent audio file</strong>
+      <span>Option A, plus a silent looping audio file alongside it.</span>
+    </button>
+    <button data-variant="D">
+      <strong>D · Real audio file</strong>
+      <span>The noise rendered into a looping audio file and played normally.</span>
+    </button>
+    <button id="stop">Stop</button>
+
+    <pre id="log"></pre>
+
+    <script src="lockscreen.js"></script>
+  </body>
+</html>
