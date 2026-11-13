@@ -1,12 +1,12 @@
 # Whitenoise: design
 
-A browser app that plays one calming sound at a time, for focus or for sleep. It is a static site with no backend, served from a small nginx container on a home server behind a Cloudflare Tunnel.
+A browser app that plays one calming sound at a time, for focus or for sleep. It is a static site with no backend, served from a small nginx container.
 
 ## Goals
 
 - **Calm, not busy.** One sound at a time, nothing starts on its own, and every change in volume is gradual.
 - **Works for sleep on a phone.** Keeps playing with the screen locked and fades out on a timer instead of cutting off.
-- **Tiny and self-hosted.** No audio files are needed, so the whole app is a few hundred kilobytes and runs in one container.
+- **Tiny and easy to host.** No audio files are needed, so the whole app is a few hundred kilobytes and runs in one container.
 
 ## Architecture
 
@@ -92,8 +92,8 @@ Every sound is trimmed to about −16 dB RMS at full volume, measured by renderi
 
 - **Image:** multi-stage Dockerfile. Node builds the static site; `nginxinc/nginx-unprivileged` serves it on port 8080 as a non-root user, with a `/healthz` health check.
 - **nginx:** long-lived caching for hashed assets, no-cache for the app shell and service worker, correct audio MIME types, gzip, and a strict Content-Security-Policy. `FRAME_ANCESTORS` controls which sites may embed the app.
-- **CI:** GitHub Actions builds amd64 and arm64 images on every push to `main` and pushes `latest` and `sha-<commit>` tags to GHCR. An optional `PORTAINER_WEBHOOK` secret triggers a redeploy.
-- **Hosting:** a Portainer stack on a home server, published at a subdomain through an existing Cloudflare Tunnel.
+- **CI:** GitHub Actions builds amd64 and arm64 images on every push to `main` and pushes `latest` and `sha-<commit>` tags to GHCR. An optional `DEPLOY_WEBHOOK` secret triggers a redeploy.
+- **Hosting:** any container host; put it behind HTTPS (reverse proxy, tunnel or CDN), which the service worker and background playback need.
 
 ## Known limits and next steps
 

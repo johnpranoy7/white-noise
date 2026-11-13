@@ -1,7 +1,5 @@
-# Portainer stack for Whitenoise.
-# Paste this into Portainer → Stacks → Add stack.
-# Your existing Cloudflare Tunnel then gets a public hostname such as
-# whitenoise.yourdomain.com pointing at this service (see README).
+# Runs the prebuilt image. To build from source instead, replace `image:` with `build: .`
+#   docker compose up -d   →   http://localhost:8080
 
 services:
   whitenoise:
@@ -9,18 +7,11 @@ services:
     container_name: whitenoise
     restart: unless-stopped
     ports:
-      # host:container — change 8086 if that port is taken on your server.
-      - "8086:8080"
+      # host:container — change the first number to use a different host port.
+      - "8080:8080"
     environment:
-      # Allow your portfolio to embed the app in an <iframe>; 'self' alone blocks it.
+      # Sites allowed to embed the app in an <iframe> (CSP frame-ancestors).
+      # Example: "'self' https://example.com"
       FRAME_ANCESTORS: "'self'"
     security_opt:
       - no-new-privileges:true
-    # If cloudflared runs as a container, you can drop `ports` and join its network
-    # instead, then point the tunnel at http://whitenoise:8080:
-    # networks:
-    #   - cloudflared
-
-# networks:
-#   cloudflared:
-#     external: true

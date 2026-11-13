@@ -51,15 +51,15 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Optional: add a PORTAINER_WEBHOOK repository secret (the stack's webhook URL)
-      # and Portainer will pull :latest and redeploy after every push to main.
-      - name: Redeploy on Portainer
+      # Optional: add a DEPLOY_WEBHOOK repository secret (any URL that accepts a POST,
+      # such as your container platform's redeploy webhook) to redeploy after each push to main.
+      - name: Trigger redeploy
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         env:
-          PORTAINER_WEBHOOK: ${{ secrets.PORTAINER_WEBHOOK }}
+          DEPLOY_WEBHOOK: ${{ secrets.DEPLOY_WEBHOOK }}
         run: |
-          if [ -z "$PORTAINER_WEBHOOK" ]; then
-            echo "PORTAINER_WEBHOOK not set; skipping redeploy."
+          if [ -z "$DEPLOY_WEBHOOK" ]; then
+            echo "DEPLOY_WEBHOOK not set; skipping redeploy."
             exit 0
           fi
-          curl -fsS -X POST "$PORTAINER_WEBHOOK"
+          curl -fsS -X POST "$DEPLOY_WEBHOOK"
