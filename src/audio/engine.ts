@@ -11,12 +11,46 @@ interface Layer {
 /** Slider position (0–1) → gain. Squaring makes the slider feel even to the ear. */
 const toGain = (v: number) => v * v;
 
-const SMOOTH = 0.08; // seconds, time constant for volume changes
-const CROSSFADE = 0.25; // seconds, time constant when switching sounds
+const SMOOTH = 0.08; // seconds, time constant for volume slider changes
+const FADE_IN = 1.6; // seconds for a sound to rise to full volume
+const FADE_OUT = 1.2; // seconds for the previous sound to fade when switching
+const PAUSE_FADE = 0.4;
+
+/**
+ * Freezes `param` at its current value and drops anything scheduled after now, so new
+ * automation can start from where it actually is (even mid-curve).
+ */
+function hold(param: AudioParam, now: number) {
+  const value = param.value;
+  if (param.cancelAndHoldAtTime) {
+    param.cancelAndHoldAtTime(now);
+  } else {
+    // Firefox has no cancelAndHoldAtTime
+    param.cancelScheduledValues(0);
+    param.setValueAtTime(value, now);
+  }
+  return value;
+}
+
+/**
+ * Glides `param` to `target` along a raised-cosine S-curve: it starts gently, so a
+ * sound swells in rather than arriving at full level.
+ */
+function ease(ctx: BaseAudioContext, param: AudioParam, target: number, seconds: number) {
+  const now = ctx.currentTime;
+  const from = hold(param, now);
+  const curve = new Float32Array(64);
+  for (let i = 0; i < curve.length; i++) {
+    const t = i / (curve.length - 1);
+    curve[i] = from + (target - from) * (0.5 - 0.5 * Math.cos(Math.PI * t));
+  }
+  // A tiny offset keeps the curve from touching the held point (overlap throws).
+  param.setValueCurveAtTime(curve, now + 0.005, seconds);
+}
 
 /**
  * Owns the Web Audio graph. Only one sound plays at a time; switching sounds
- * crossfades the old layer out and the new one in.
+ * fades the old layer out and swells the new one in over about a second and a half.
  *
  *   layer → mix → master (user volume) → duck (focus breaks) → sleep (sleep timer)
  *          → limiter → MediaStream → <audio>
@@ -49,8 +83,15 @@ class AudioEngine {
     // Both calls happen synchronously in the gesture; the worklet loads afterwards.
     void ctx.resume();
     this.element.play().catch(() => this.useDirectOutput());
-    this.sleep.gain.cancelScheduledValues(ctx.currentTime);
-    this.sleep.gain.setTargetAtTime(1, ctx.currentTime, 0.3);
+    const resuming = this.current && this.layers.get(this.current)?.source;
+    if (resuming) {
+      // The layer is still at full level from before the pause; swell the output instead.
+      ease(ctx, this.sleep.gain, 1, FADE_IN);
+    } else {
+      // A new layer swells itself in once its source is ready (see createLayer).
+      hold(this.sleep.gain, ctx.currentTime);
+      this.sleep.gain.setValueAtTime(1, ctx.currentTime + 0.005);
+    }
     this.updateMediaSession();
     return this.ready!.then(() => this.syncLayers());
   }
@@ -60,10 +101,8 @@ class AudioEngine {
     this.playing = false;
     this.updateMediaSession();
     if (!ctx) return;
-    // Short fade so pausing doesn't click.
-    this.sleep.gain.cancelScheduledValues(ctx.currentTime);
-    this.sleep.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
-    await new Promise((r) => setTimeout(r, 250));
+    ease(ctx, this.sleep.gain, 0, PAUSE_FADE);
+    await new Promise((r) => setTimeout(r, PAUSE_FADE * 1000 + 50));
     if (this.playing) return;
     this.element.pause();
     await ctx.suspend();
@@ -100,17 +139,15 @@ class AudioEngine {
     if (!this.ctx) return;
     const g = this.sleep.gain;
     const now = this.ctx.currentTime;
-    g.cancelScheduledValues(now);
-    g.setValueAtTime(1, now);
-    g.setValueAtTime(1, now + Math.max(0, totalSeconds - fadeSeconds));
+    hold(g, now);
+    g.linearRampToValueAtTime(1, now + 0.5);
+    g.setValueAtTime(1, now + Math.max(0.5, totalSeconds - fadeSeconds));
     g.linearRampToValueAtTime(0, now + totalSeconds);
   }
 
   cancelSleepFade() {
     if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    this.sleep.gain.cancelScheduledValues(now);
-    this.sleep.gain.setTargetAtTime(this.playing ? 1 : 0, now, 0.3);
+    ease(this.ctx, this.sleep.gain, this.playing ? 1 : 0, 1);
   }
 
   /** A soft two-note bell for timer transitions. Bypasses the duck so it is always heard. */
@@ -189,18 +226,22 @@ class AudioEngine {
   private syncLayers() {
     const ctx = this.ctx;
     if (!ctx) return;
-    const now = ctx.currentTime;
     if (this.current) {
-      const layer = this.layers.get(this.current) ?? this.createLayer(this.current);
-      clearTimeout(layer.disposeTimer);
-      layer.disposeTimer = undefined;
-      layer.gain.gain.setTargetAtTime(1, now, CROSSFADE);
+      const existing = this.layers.get(this.current);
+      if (!existing) {
+        this.createLayer(this.current);
+      } else {
+        clearTimeout(existing.disposeTimer);
+        existing.disposeTimer = undefined;
+        // Coming back to a sound that was fading out: swell it back up from where it is.
+        if (existing.source) ease(ctx, existing.gain.gain, 1, FADE_IN);
+      }
     }
     for (const [id, layer] of this.layers) {
       if (id === this.current || layer.disposeTimer !== undefined) continue;
-      layer.gain.gain.setTargetAtTime(0, now, CROSSFADE);
+      ease(ctx, layer.gain.gain, 0, FADE_OUT);
       // Free the nodes once the fade has finished; a silent layer still costs CPU.
-      layer.disposeTimer = window.setTimeout(() => this.disposeLayer(id), CROSSFADE * 6000);
+      layer.disposeTimer = window.setTimeout(() => this.disposeLayer(id), FADE_OUT * 1000 + 200);
     }
   }
 
@@ -217,6 +258,7 @@ class AudioEngine {
       }
       layer.source = recorded ?? createProcedural(ctx, id);
       layer.source.output.connect(layer.gain);
+      if (this.current === id) ease(ctx, layer.gain.gain, 1, FADE_IN);
     });
     return layer;
   }

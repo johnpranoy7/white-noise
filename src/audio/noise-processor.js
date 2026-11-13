@@ -45,6 +45,7 @@ class NoiseProcessor extends AudioWorkletProcessor {
     // Rain: a soft pink bed plus individual drops, each a short burst of noise
     // with a fast exponential decay and a random position in the stereo field.
     this.dropsPerSecond = opts.dropsPerSecond || 60;
+    this.dropGain = opts.dropGain ?? 1;
     this.drops = [];
   }
 
@@ -55,9 +56,9 @@ class NoiseProcessor extends AudioWorkletProcessor {
         const size = Math.random();
         this.drops.push({
           start: i,
-          env: 0.15 + 0.85 * size * size,
-          // decay per sample: bigger drops ring a little longer (≈4–25 ms)
-          decay: Math.exp(-1 / (sampleRate * (0.004 + 0.021 * size))),
+          env: (0.15 + 0.85 * size * size) * this.dropGain,
+          // decay per sample: bigger drops ring a little longer (≈6–30 ms)
+          decay: Math.exp(-1 / (sampleRate * (0.006 + 0.024 * size))),
           pan: Math.random(),
         });
       }

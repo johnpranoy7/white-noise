@@ -529,7 +529,42 @@ kbd {
     border-radius 0.45s var(--ease);
 }
 
-/* The swatch is literally textured with noise; it shimmers while that sound plays. */
+/* Noise swatches: fine vertical lines blended softly into the color, slightly darker
+   toward the bottom. They drift slowly sideways while the sound plays. */
+.grid-noise .tile-swatch::before {
+  content: '';
+  position: absolute;
+  inset: 0 -12%;
+  background:
+    linear-gradient(to bottom, rgb(255 255 255 / 0.08), transparent 40%, rgb(0 0 0 / 0.22)),
+    var(--streaks);
+  background-size: 100% 100%;
+  mix-blend-mode: var(--streak-blend, overlay);
+  opacity: var(--streak-opacity, 0.5);
+  pointer-events: none;
+}
+
+/* Overlay barely marks a near-white or near-black base, so those two blend differently. */
+.tile[data-sound='white'] {
+  --streak-blend: multiply;
+  --streak-opacity: 0.4;
+}
+
+.tile[data-sound='deep'] {
+  --streak-blend: screen;
+  --streak-opacity: 0.12;
+}
+
+.tile[data-playing] .tile-swatch::before {
+  animation: drift 14s ease-in-out infinite alternate;
+}
+
+@keyframes drift {
+  from { transform: translateX(-6%); }
+  to { transform: translateX(6%); }
+}
+
+/* Fine grain over every swatch; it shimmers while that sound plays. */
 .tile-swatch::after {
   content: '';
   position: absolute;

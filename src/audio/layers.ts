@@ -53,19 +53,20 @@ function stopAll(nodes: AudioNode[]) {
 }
 
 /**
- * Output trim per sound, measured so each one sits near -16 dB RMS at full volume.
- * Deep brown and wind are left a little hotter/softer by ear.
+ * Output trim per sound so each sits near -16 dB RMS at full volume (measured by
+ * rendering each one offline). Deep brown is left ~2 dB hotter because low sounds
+ * read quieter to the ear.
  */
 const LEVEL: Record<SoundId, number> = {
-  white: 0.8,
-  pink: 1.13,
-  brown: 1.5,
-  grey: 1.45,
-  deep: 1,
-  rain: 1.35,
-  stream: 2.9,
-  ocean: 1.15,
-  wind: 2.3,
+  white: 0.55,
+  pink: 0.82,
+  brown: 0.79,
+  grey: 0.99,
+  deep: 0.65,
+  rain: 1.6,
+  stream: 1.37,
+  ocean: 1.05,
+  wind: 1.76,
 };
 
 /**
@@ -104,54 +105,63 @@ export function createProcedural(ctx: AudioContext, id: SoundId): Source {
         keep(gain(ctx, 1.8)),
       );
       break;
-    case 'rain':
-      output = chain(
-        keep(noise(ctx, 'rain', { dropsPerSecond: 70 })),
-        keep(filter(ctx, 'highpass', 450)),
-        keep(filter(ctx, 'lowpass', 9000)),
-        keep(gain(ctx, 0.9)),
+    case 'rain': {
+      // Rain heard from indoors: many quiet drops blurred into a soft patter, the
+      // highs rolled off (no hiss), a low body underneath, and intensity drifting slowly.
+      const amp = keep(gain(ctx, 0.85));
+      chain(
+        keep(noise(ctx, 'rain', { dropsPerSecond: 160, dropGain: 0.3 })),
+        keep(filter(ctx, 'highpass', 150)),
+        keep(filter(ctx, 'lowpass', 2600, 0.5)),
+        amp,
       );
+      chain(keep(noise(ctx, 'brown')), keep(filter(ctx, 'lowpass', 400)), keep(gain(ctx, 0.35)), amp);
+      nodes.push(lfo(ctx, 0.035, 0.12, amp.gain, 0.3));
+      output = amp;
       break;
+    }
     case 'stream': {
-      // Several resonances drifting at unrelated rates give the "babble" of water.
-      const src = keep(noise(ctx, 'white'));
-      const mix = keep(gain(ctx, 0.6));
+      // A distant brook: broad, gently drifting bands over a low bed. Low Q and slow
+      // movement keep it from sounding bubbly or busy.
+      const src = keep(noise(ctx, 'pink'));
+      const mix = keep(gain(ctx, 0.7));
       const bands: [number, number, number][] = [
-        [450, 4, 0.31],
-        [900, 5, 0.53],
-        [1700, 6, 0.83],
-        [3100, 5, 1.27],
+        [650, 1.1, 0.23],
+        [1500, 1.3, 0.37],
       ];
       for (const [freq, q, rate] of bands) {
         const bp = keep(filter(ctx, 'bandpass', freq, q));
-        nodes.push(lfo(ctx, rate, freq * 0.25, bp.frequency, 0.2));
-        nodes.push(lfo(ctx, rate * 2.7, freq * 0.12, bp.frequency, 0.2));
+        nodes.push(lfo(ctx, rate, freq * 0.12, bp.frequency, 0.2));
         src.connect(bp).connect(mix);
       }
-      const bed = chain(keep(noise(ctx, 'brown')), keep(filter(ctx, 'lowpass', 600)), keep(gain(ctx, 0.5)));
-      bed.connect(mix);
-      output = mix;
+      chain(keep(noise(ctx, 'brown')), keep(filter(ctx, 'lowpass', 900)), keep(gain(ctx, 0.6)), mix);
+      output = chain(mix, keep(filter(ctx, 'lowpass', 3500, 0.5)));
       break;
     }
     case 'ocean': {
-      // One slow LFO opens the filter and raises the level together: a wave every ~12 s.
-      const lp = keep(filter(ctx, 'lowpass', 700, 0.6));
+      // A slow LFO opens the filter and raises the level together: a wave every ~12 s.
+      // A second, slower one varies wave size so the rhythm doesn't feel mechanical.
+      const lp = keep(filter(ctx, 'lowpass', 550, 0.5));
       const amp = keep(gain(ctx, 0.55));
-      chain(keep(noise(ctx, 'pink')), lp, amp);
-      const brown = keep(noise(ctx, 'brown'));
-      brown.connect(lp);
-      nodes.push(lfo(ctx, 0.083, 550, lp.frequency));
-      nodes.push(lfo(ctx, 0.083, 0.4, amp.gain));
+      chain(keep(noise(ctx, 'pink')), keep(gain(ctx, 0.7)), lp, amp);
+      chain(keep(noise(ctx, 'brown')), lp);
+      nodes.push(lfo(ctx, 0.083, 380, lp.frequency));
+      nodes.push(lfo(ctx, 0.083, 0.33, amp.gain));
+      nodes.push(lfo(ctx, 0.029, 120, lp.frequency));
+      nodes.push(lfo(ctx, 0.029, 0.1, amp.gain));
       output = amp;
       break;
     }
     case 'wind': {
-      const bp = keep(filter(ctx, 'bandpass', 520, 1.4));
-      const amp = keep(gain(ctx, 1.1));
-      chain(keep(noise(ctx, 'pink')), bp, amp);
-      nodes.push(lfo(ctx, 0.05, 220, bp.frequency, 0.3));
-      nodes.push(lfo(ctx, 0.13, 120, bp.frequency, 0.3));
-      nodes.push(lfo(ctx, 0.07, 0.45, amp.gain, 0.3));
+      // A breeze through trees: a wide, low band that drifts very slowly. Low Q keeps
+      // out the whistle that makes synthetic wind sound eerie.
+      const bp = keep(filter(ctx, 'bandpass', 380, 0.6));
+      const amp = keep(gain(ctx, 0.8));
+      chain(keep(noise(ctx, 'pink')), keep(filter(ctx, 'lowpass', 1100, 0.5)), bp, amp);
+      chain(keep(noise(ctx, 'brown')), keep(gain(ctx, 0.25)), amp);
+      nodes.push(lfo(ctx, 0.03, 120, bp.frequency, 0.3));
+      nodes.push(lfo(ctx, 0.071, 60, bp.frequency, 0.3));
+      nodes.push(lfo(ctx, 0.045, 0.3, amp.gain, 0.3));
       output = amp;
       break;
     }
