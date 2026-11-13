@@ -1,0 +1,26 @@
+# Portainer stack for Whitenoise.
+# Paste this into Portainer → Stacks → Add stack, replacing GITHUB_USER below.
+# Your existing Cloudflare Tunnel then gets a public hostname such as
+# whitenoise.yourdomain.com pointing at this service (see README).
+
+services:
+  whitenoise:
+    image: ghcr.io/GITHUB_USER/whitenoise:latest
+    container_name: whitenoise
+    restart: unless-stopped
+    ports:
+      # host:container — change 8086 if that port is taken on your server.
+      - "8086:8080"
+    environment:
+      # Allow your portfolio to embed the app in an <iframe>; 'self' alone blocks it.
+      FRAME_ANCESTORS: "'self'"
+    security_opt:
+      - no-new-privileges:true
+    # If cloudflared runs as a container, you can drop `ports` and join its network
+    # instead, then point the tunnel at http://whitenoise:8080:
+    # networks:
+    #   - cloudflared
+
+# networks:
+#   cloudflared:
+#     external: true
