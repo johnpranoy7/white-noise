@@ -108,6 +108,7 @@ Every sound is trimmed to about −16 dB RMS at full volume, measured by renderi
 
 ## Known limits and next steps
 
-- **Background playback on iOS** needs a real-device test over HTTPS.
+- **Background playback on iOS** works on a real iPhone: sound continues with the screen locked, and the lock screen shows each sound's title and artwork with working previous/next buttons.
+- **Safari Private Browsing hides lock-screen details.** In a private Safari tab, iOS shows the playback controls but leaves the title and artwork blank. This is Safari's privacy behaviour, not a bug in the app; normal Safari tabs and other browsers show everything. (Confirmed with a four-way test of playback methods: all behaved the same, and only Private Browsing made the difference.)
 - **Nature sounds** are synthesised stand-ins; CC0 field recordings would sound more natural and can be dropped in without code changes.
 - **PWA offline install** has only been verified at the server level (correct headers); confirm it in Chrome once deployed.

@@ -13,6 +13,8 @@ const PATHS = {
   timer: 'M12 8.5V13l2.5 1.5M9.5 2.5h5M12 21.5a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z',
   close: 'M6.5 6.5l11 11M17.5 6.5l-11 11',
   settings: 'M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4',
+  install: 'M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14',
+  share: 'M12 3.5v11M8 7.5l4-4 4 4M7 10.5H6a1.5 1.5 0 0 0-1.5 1.5v7A1.5 1.5 0 0 0 6 20.5h12a1.5 1.5 0 0 0 1.5-1.5v-7A1.5 1.5 0 0 0 18 10.5h-1',
 } as const;
 
 export type IconName = keyof typeof PATHS;

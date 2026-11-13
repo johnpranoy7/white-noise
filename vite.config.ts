@@ -17,6 +17,8 @@ export default defineConfig({
         short_name: 'Whitenoise',
         theme_color: '#0e0e0d',
         background_color: '#0e0e0d',
+        id: '/',
+        scope: '/',
         display: 'standalone',
         start_url: '/',
         description:
@@ -31,9 +33,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,woff2}'],
-        // lab/ holds test pages that aren't part of the app
-        globIgnores: ['lab/**'],
-        navigateFallbackDenylist: [/^\/healthz/, /^\/sounds\//, /^\/lab\//],
+        navigateFallbackDenylist: [/^\/healthz/, /^\/sounds\//],
         runtimeCaching: [
           {
             // Nature recordings are large, so they are cached the first time they play

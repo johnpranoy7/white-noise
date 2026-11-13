@@ -143,9 +143,13 @@ kbd {
   font-size: 13px;
 }
 
-/* .pill sets anchor-name for the timer menu; this needs its own, so it outranks .pill. */
+/* .pill sets anchor-name for the timer menu; these need their own, so they outrank .pill. */
 .pill.settings-button {
   anchor-name: --settings;
+}
+
+.pill.install-button {
+  anchor-name: --install;
 }
 
 /* ---------- layout ---------- */
@@ -454,6 +458,12 @@ kbd {
       left: auto;
       right: anchor(right);
     }
+
+    .install-menu {
+      position-anchor: --install;
+      left: auto;
+      right: anchor(right);
+    }
   }
 }
 
@@ -594,6 +604,32 @@ kbd {
   font-size: 12px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+}
+
+/* ---------- install help ---------- */
+
+.install-steps {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.install-steps strong {
+  font-weight: 600;
+}
+
+.inline-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin: 0 2px;
+  border-radius: 6px;
+  background: var(--line);
+  vertical-align: -5px;
 }
 
 /* ---------- library ---------- */

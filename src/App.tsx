@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { soundById, soundByKey } from './audio/sounds';
 import { About } from './components/About';
+import { InstallButton } from './components/InstallButton';
 import { Player } from './components/Player';
 import { Settings } from './components/Settings';
 import { SoundGrid } from './components/SoundGrid';
@@ -70,6 +71,7 @@ export default function App() {
           <span className="topbar-note">
             <kbd>Space</kbd> play · <kbd>1</kbd>–<kbd>7</kbd> noise · <kbd>Q</kbd>–<kbd>U</kbd> nature
           </span>
+          <InstallButton />
           <Settings />
         </div>
       </header>
