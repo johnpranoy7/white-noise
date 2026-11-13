@@ -16,6 +16,24 @@ export interface FocusTimer {
   round: number;
 }
 
+export interface Settings {
+  /** Caps the volume and starts a sleep timer whenever a sound plays. */
+  childSafe: boolean;
+  /** Stops the moving textures and other animations. */
+  calmVisuals: boolean;
+  /** A soft bell when the focus timer switches between work and break. */
+  chime: boolean;
+}
+
+const DEFAULT_SETTINGS: Settings = { childSafe: false, calmVisuals: false, chime: false };
+
+/** Starting volume on a first visit; after that the user's own setting is remembered. */
+const DEFAULT_VOLUME = 0.4;
+
+/** Child-safe mode: highest volume allowed, and the sleep timer it starts. */
+export const CHILD_SAFE_MAX_VOLUME = 0.4;
+export const CHILD_SAFE_TIMER_MIN = 30;
+
 /** Volume while on a focus-timer break. */
 const BREAK_LEVEL = 0.25;
 
@@ -26,7 +44,9 @@ interface State {
   /** Nothing is selected until the user picks a sound; nothing plays on load. */
   current: SoundId | null;
   playing: boolean;
+  /** The user's chosen volume. Child-safe mode caps what is played, not this value. */
   volume: number;
+  settings: Settings;
   sleepTimer: SleepTimer | null;
   focusTimer: FocusTimer | null;
 
@@ -36,6 +56,7 @@ interface State {
   play(): void;
   pause(): void;
   setVolume(v: number): void;
+  setSetting<K extends keyof Settings>(key: K, value: Settings[K]): void;
   startSleepTimer(minutes: number): void;
   cancelSleepTimer(): void;
   startFocusTimer(focusMin: number, breakMin: number): void;
@@ -44,12 +65,17 @@ interface State {
   tick(now: number): void;
 }
 
+/** The volume actually sent to the speakers, after the child-safe cap. */
+export const playedVolume = (s: Pick<State, 'volume' | 'settings'>) =>
+  s.settings.childSafe ? Math.min(s.volume, CHILD_SAFE_MAX_VOLUME) : s.volume;
+
 export const useStore = create<State>()(
   persist(
     (set, get) => ({
       current: null,
       playing: false,
-      volume: 0.7,
+      volume: DEFAULT_VOLUME,
+      settings: DEFAULT_SETTINGS,
       sleepTimer: null,
       focusTimer: null,
 
@@ -64,13 +90,14 @@ export const useStore = create<State>()(
       togglePlay: () => (get().playing ? get().pause() : get().play()),
 
       play: () => {
-        const { playing, current, volume, focusTimer } = get();
+        const { playing, current, focusTimer, settings, sleepTimer } = get();
         if (playing || !current) return;
-        engine.setMaster(volume);
+        engine.setMaster(playedVolume(get()));
         engine.setSound(current);
         void engine.start();
         if (focusTimer?.phase === 'break') engine.setDuck(BREAK_LEVEL, 0.1);
         set({ playing: true });
+        if (settings.childSafe && !sleepTimer) get().startSleepTimer(CHILD_SAFE_TIMER_MIN);
       },
 
       pause: () => {
@@ -81,8 +108,16 @@ export const useStore = create<State>()(
       },
 
       setVolume: (v) => {
-        engine.setMaster(v);
         set({ volume: v });
+        engine.setMaster(playedVolume(get()));
+      },
+
+      setSetting: (key, value) => {
+        set({ settings: { ...get().settings, [key]: value } });
+        if (key === 'childSafe') {
+          engine.setMaster(playedVolume(get()));
+          if (value && get().playing && !get().sleepTimer) get().startSleepTimer(CHILD_SAFE_TIMER_MIN);
+        }
       },
 
       startSleepTimer: (minutes) => {
@@ -115,7 +150,7 @@ export const useStore = create<State>()(
         }
         if (focusTimer && now >= focusTimer.endsAt) {
           const toBreak = focusTimer.phase === 'focus';
-          engine.chime();
+          if (get().settings.chime) engine.chime();
           engine.setDuck(toBreak ? BREAK_LEVEL : 1);
           set({
             focusTimer: {
@@ -130,12 +165,20 @@ export const useStore = create<State>()(
     }),
     {
       name: 'whitenoise',
-      version: 2,
-      // Only the volume is remembered; the sound is always chosen fresh.
-      partialize: (s) => ({ volume: s.volume }),
+      version: 3,
+      // Volume and settings are remembered; the sound is always chosen fresh.
+      partialize: (s) => ({ volume: s.volume, settings: s.settings }),
       migrate: (persisted) => {
-        const p = persisted as { volume?: number; master?: number } | undefined;
-        return { volume: p?.volume ?? p?.master ?? 0.7 };
+        const p = persisted as { volume?: number; master?: number; settings?: Partial<Settings> } | undefined;
+        return {
+          volume: p?.volume ?? p?.master ?? DEFAULT_VOLUME,
+          settings: { ...DEFAULT_SETTINGS, ...p?.settings },
+        };
+      },
+      // Settings added in later versions get their defaults.
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<State>;
+        return { ...current, ...p, settings: { ...DEFAULT_SETTINGS, ...p.settings } };
       },
     },
   ),

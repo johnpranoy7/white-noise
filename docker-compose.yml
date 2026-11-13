@@ -13,5 +13,8 @@ services:
       # Sites allowed to embed the app in an <iframe> (CSP frame-ancestors).
       # Example: "'self' https://example.com"
       FRAME_ANCESTORS: "'self'"
+      # Public address of the site, for search engines and link previews
+      # (canonical link, social card, sitemap). Leave empty if it isn't public.
+      SITE_URL: ""
     security_opt:
       - no-new-privileges:true

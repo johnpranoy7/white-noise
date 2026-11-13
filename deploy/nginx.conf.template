@@ -47,6 +47,17 @@ server {
         try_files $uri =404;
     }
 
+    # Only exists when SITE_URL is set; never fall back to the app for it.
+    location = /sitemap.xml {
+        expires 1d;
+        try_files $uri =404;
+    }
+
+    location = /robots.txt {
+        expires 1d;
+        try_files $uri =404;
+    }
+
     location = /sounds/manifest.json {
         default_type application/json;
         expires -1;

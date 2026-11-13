@@ -8,6 +8,7 @@ const PATHS = {
   volume: 'M4 9.5h3.5L12 6v12l-4.5-3.5H4ZM15.5 9a4 4 0 0 1 0 6',
   timer: 'M12 8.5V13l2.5 1.5M9.5 2.5h5M12 21.5a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z',
   close: 'M6.5 6.5l11 11M17.5 6.5l-11 11',
+  settings: 'M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4',
 } as const;
 
 export type IconName = keyof typeof PATHS;

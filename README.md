@@ -97,6 +97,7 @@ docker run --rm -p 8080:8080 ghcr.io/johnpranoy7/white-noise:latest
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `FRAME_ANCESTORS` | `'self'` | Value of the CSP `frame-ancestors` directive: which sites may embed the app in an `<iframe>`. Example: `'self' https://example.com` |
+| `SITE_URL` | empty | The site's public address, such as `https://whitenoise.example.com`. Fills in the canonical link, the social-card URLs and the structured data, and generates `robots.txt` and `sitemap.xml`. When empty, those tags are left out. |
 
 The server also provides:
 

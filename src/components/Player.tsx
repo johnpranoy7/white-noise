@@ -1,4 +1,4 @@
-import { useStore } from '../state/store';
+import { CHILD_SAFE_MAX_VOLUME, useStore } from '../state/store';
 import { Icon } from './Icon';
 import { Slider } from './Slider';
 
@@ -28,6 +28,8 @@ export function Player({ now }: { now: number }) {
   const togglePlay = useStore((s) => s.togglePlay);
   const volume = useStore((s) => s.volume);
   const setVolume = useStore((s) => s.setVolume);
+  const childSafe = useStore((s) => s.settings.childSafe);
+  const cap = childSafe ? CHILD_SAFE_MAX_VOLUME : 1;
   const sleep = useStore((s) => s.sleepTimer);
   const focus = useStore((s) => s.focusTimer);
   const startSleep = useStore((s) => s.startSleepTimer);
@@ -47,9 +49,19 @@ export function Player({ now }: { now: number }) {
         <Icon name={playing ? 'pause' : 'play'} size={26} />
       </button>
 
-      <label className="volume">
+      <label className="volume" data-capped={childSafe || undefined}>
         <Icon name="volume" size={18} />
-        <Slider label="Volume" value={volume} onChange={setVolume} />
+        <Slider
+          label={childSafe ? `Volume, child-safe limit ${Math.round(cap * 100)}%` : 'Volume'}
+          value={Math.min(volume, cap)}
+          max={cap}
+          onChange={setVolume}
+        />
+        {/* Shown while hovering or adjusting; the slider itself announces the value. */}
+        <span className="volume-value" aria-hidden="true">
+          {Math.round(Math.min(volume, cap) * 100)}%
+        </span>
+        {childSafe && <span className="cap-note">max {Math.round(cap * 100)}%</span>}
       </label>
 
       <div className="timer-slot">
@@ -87,25 +99,27 @@ export function Player({ now }: { now: number }) {
                   closeMenu();
                 }}
               >
-                {m}m
+                {m} min
               </button>
             ))}
           </div>
         </div>
         <div className="menu-group">
           <h3>Focus</h3>
-          <p>Work, then a break with the sound lowered.</p>
-          <div className="seg">
+          <p>Focus for a set time, then take a short break with the sound turned down. It repeats until you stop it.</p>
+          <div className="seg seg-two-line">
             {FOCUS_OPTIONS.map(([f, b]) => (
               <button
                 key={f}
+                aria-label={`${f} minutes focus, ${b} minutes break`}
                 aria-pressed={focus?.focusMin === f}
                 onClick={() => {
                   startFocus(f, b);
                   closeMenu();
                 }}
               >
-                {f} / {b}
+                <span className="seg-main">{f} min</span>
+                <span className="seg-sub">+ {b} min break</span>
               </button>
             ))}
           </div>

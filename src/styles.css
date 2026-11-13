@@ -122,15 +122,28 @@ kbd {
 }
 
 .wordmark {
+  margin: 0;
+  font-weight: 400;
   font-family: var(--serif);
   font-style: italic;
   font-size: 28px;
   letter-spacing: -0.01em;
 }
 
+.topbar-end {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .topbar-note {
   color: var(--muted);
   font-size: 13px;
+}
+
+/* .pill sets anchor-name for the timer menu; this needs its own, so it outranks .pill. */
+.pill.settings-button {
+  anchor-name: --settings;
 }
 
 /* ---------- layout ---------- */
@@ -245,17 +258,39 @@ kbd {
   opacity: 0.25;
 }
 
+/* Play and timers share the first row; volume gets the full width of its own row
+   below, so each percent is a usable distance apart. (The phone dock puts them back
+   on one row.) */
 .volume {
+  position: relative;
+  order: 2;
   display: flex;
   align-items: center;
   gap: 10px;
-  flex: 1 1 140px;
-  min-width: 120px;
-  max-width: 220px;
+  flex: 1 1 100%;
+  min-width: 0;
   color: var(--muted);
 }
 
+.volume-value {
+  flex: none;
+  min-width: 4ch;
+  text-align: right;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.volume:hover .volume-value,
+.volume:focus-within .volume-value,
+.volume:has(.slider:active) .volume-value {
+  opacity: 1;
+}
+
 .timer-slot {
+  order: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -297,48 +332,76 @@ kbd {
 
 /* ---------- slider ---------- */
 
+/* Registered so the track can animate its thickness. */
+@property --track {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 6px;
+}
+
+/* The whole 32px row is the hit area. The track thickens when the pointer is over it
+   or it's being dragged, so it is easy to aim at and to see while adjusting. */
 .slider {
   --fill: 0%;
+  --track: 6px;
+  --thumb: 18px;
   width: 100%;
-  height: 24px;
+  height: 32px;
   margin: 0;
   background: transparent;
   appearance: none;
   cursor: pointer;
+  transition: --track 0.2s var(--ease);
+}
+
+.slider:hover,
+.slider:active,
+.slider:focus-visible {
+  --track: 10px;
+}
+
+/* Touch screens have no hover, so start thicker there. */
+@media (pointer: coarse) {
+  .slider {
+    --track: 10px;
+    --thumb: 22px;
+  }
 }
 
 .slider::-webkit-slider-runnable-track {
-  height: 3px;
-  border-radius: 2px;
+  height: var(--track);
+  border-radius: calc(var(--track) / 2);
   background: linear-gradient(to right, var(--fg) var(--fill), var(--line-strong) var(--fill));
 }
 
 .slider::-moz-range-track {
-  height: 3px;
-  border-radius: 2px;
+  height: var(--track);
+  border-radius: calc(var(--track) / 2);
   background: linear-gradient(to right, var(--fg) var(--fill), var(--line-strong) var(--fill));
 }
 
 .slider::-webkit-slider-thumb {
   appearance: none;
-  width: 14px;
-  height: 14px;
-  margin-top: -5.5px;
+  width: var(--thumb);
+  height: var(--thumb);
+  margin-top: calc((var(--track) - var(--thumb)) / 2);
   border-radius: 50%;
   background: var(--fg);
+  box-shadow: 0 0 0 3px var(--bg);
   transition: transform 0.2s var(--ease);
 }
 
 .slider:active::-webkit-slider-thumb {
-  transform: scale(1.3);
+  transform: scale(1.15);
 }
 
 .slider::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
+  width: var(--thumb);
+  height: var(--thumb);
   border: none;
   border-radius: 50%;
   background: var(--fg);
+  box-shadow: 0 0 0 3px var(--bg);
 }
 
 /* ---------- timer popover ---------- */
@@ -382,6 +445,12 @@ kbd {
       left: anchor(left);
       margin: 10px 0 0;
       position-try-fallbacks: flip-block, flip-inline;
+    }
+
+    .settings-menu {
+      position-anchor: --settings;
+      left: auto;
+      right: anchor(right);
     }
   }
 }
@@ -428,6 +497,25 @@ kbd {
   transition: background 0.15s, color 0.15s;
 }
 
+/* Focus options: the work length, with the break length under it. */
+.seg-two-line button {
+  display: grid;
+  gap: 1px;
+  height: auto;
+  padding: 8px 6px;
+  line-height: 1.25;
+}
+
+.seg-sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.seg button[aria-pressed='true'] .seg-sub {
+  color: inherit;
+  opacity: 0.7;
+}
+
 .seg button:hover {
   background: var(--line);
 }
@@ -436,6 +524,74 @@ kbd {
   background: var(--fg);
   border-color: var(--fg);
   color: var(--bg);
+}
+
+/* ---------- settings ---------- */
+
+.settings-menu {
+  width: min(380px, calc(100vw - 24px));
+}
+
+.switch-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px;
+}
+
+.switch-row + .switch-row {
+  border-top: 1px solid var(--line);
+}
+
+.switch-row h3 {
+  font-size: 20px;
+}
+
+.switch-row p {
+  margin-bottom: 0;
+}
+
+.switch {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 26px;
+  margin-top: 2px;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--line);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.25s var(--ease), background 0.2s;
+}
+
+.switch[aria-checked='true'] {
+  background: var(--fg);
+  border-color: var(--fg);
+}
+
+.switch[aria-checked='true']::after {
+  background: var(--bg);
+  transform: translateX(18px);
+}
+
+.cap-note {
+  flex: none;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---------- library ---------- */
@@ -689,6 +845,68 @@ kbd {
   }
 }
 
+/* ---------- about ---------- */
+
+.about {
+  max-width: 1280px;
+  margin: 112px auto 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.about > h2 {
+  margin: 0 0 28px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.about-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 28px 40px;
+}
+
+.about h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.about p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+/* Plain-HTML summary shown for a moment before the app starts (and to crawlers). */
+.prerender {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 16px;
+  color: var(--muted);
+}
+
+.prerender h1 {
+  margin: 0 0 12px;
+  color: var(--fg);
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 40px;
+}
+
+.prerender h2 {
+  margin: 28px 0 8px;
+  color: var(--fg);
+  font-size: 15px;
+  font-weight: 500;
+}
+
 /* ---------- footer ---------- */
 
 .footer {
@@ -697,7 +915,7 @@ kbd {
   justify-content: space-between;
   gap: 8px 24px;
   max-width: 1280px;
-  margin: 96px auto 0;
+  margin: 56px auto 0;
   padding-top: 16px;
   border-top: 1px solid var(--line);
   color: var(--muted);
@@ -721,8 +939,13 @@ kbd {
     padding-bottom: calc(120px + env(safe-area-inset-bottom));
   }
 
-  .topbar-note {
+  .topbar-note,
+  .cap-note {
     display: none;
+  }
+
+  .topbar {
+    align-items: center;
   }
 
   .layout {
@@ -767,8 +990,24 @@ kbd {
   }
 
   .volume {
-    min-width: 0;
-    max-width: none;
+    order: 0;
+    flex: 1 1 auto;
+  }
+
+  .timer-slot {
+    order: 0;
+  }
+
+  /* No room in the dock: the percentage floats just above the slider instead. */
+  .volume-value {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 30px);
+    padding: 4px 8px;
+    border-radius: 8px;
+    background: var(--panel);
+    border: 1px solid var(--line-strong);
+    pointer-events: none;
   }
 
   .timer-slot {
@@ -815,6 +1054,19 @@ kbd {
   .tile-key {
     display: none;
   }
+}
+
+/* Calm visuals (a setting) stops every animation: grain, drifting lines, level meter,
+   pulsing dot, title entrance. Short UI transitions stay. */
+[data-calm] *,
+[data-calm] *::before,
+[data-calm] *::after {
+  animation: none !important;
+}
+
+/* The slider still thickens under the pointer, just without the motion. */
+[data-calm] .slider {
+  transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

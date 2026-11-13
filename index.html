@@ -3,14 +3,94 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="Noise and nature sounds for focus and sleep, generated in your browser." />
+    <title>Whitenoise – Free White, Pink &amp; Brown Noise for Sleep and Focus</title>
+    <meta
+      name="description"
+      content="Free white, pink, brown, green and blue noise plus calming rain, ocean and stream sounds. Generated live in your browser, with a sleep timer. No ads, no sign-up."
+    />
+    <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#0e0e0d" />
+    <meta name="color-scheme" content="dark light" />
+
+    <!--
+      The site-URL placeholder in the tags below is filled in from the SITE_URL environment
+      variable when the container starts (deploy/site-url.sh). If SITE_URL is unset, lines
+      that still hold the placeholder are removed, so keep each such tag on one line.
+    -->
+    <link rel="canonical" href="__SITE_URL__/" />
+    <meta property="og:url" content="__SITE_URL__/" />
+    <meta property="og:image" content="__SITE_URL__/og-image.jpg" />
+    <meta name="twitter:image" content="__SITE_URL__/og-image.jpg" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Whitenoise" />
+    <meta property="og:title" content="Whitenoise – Noise and nature sounds for sleep and focus" />
+    <meta
+      property="og:description"
+      content="White, pink, brown, green and blue noise plus rain, ocean and stream sounds, generated live in your browser. Free, with a sleep timer."
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Whitenoise: seven colored noise swatches beside the words Sleep. Focus." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Whitenoise – Noise and nature sounds for sleep and focus" />
+    <meta
+      name="twitter:description"
+      content="White, pink, brown, green and blue noise plus rain, ocean and stream sounds. Free, in your browser."
+    />
+
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-    <link rel="apple-touch-icon" href="/icon.svg" />
-    <title>Whitenoise</title>
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Whitenoise",
+        "url": "__SITE_URL__/",
+        "description": "Free white, pink, brown, grey, green and blue noise and calming nature sounds (rain, stream, ocean, breeze), generated live in the browser, with a sleep timer and a focus timer.",
+        "applicationCategory": "LifestyleApplication",
+        "operatingSystem": "Any (web browser)",
+        "browserRequirements": "Requires JavaScript and the Web Audio API",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "keywords": "white noise, pink noise, brown noise, green noise, blue noise, grey noise, rain sounds, ocean sounds, sleep sounds, focus sounds, noise generator"
+      }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!--
+        Plain-HTML summary for crawlers and link previews that don't run JavaScript.
+        React replaces it as soon as the app starts.
+      -->
+      <main class="prerender">
+        <h1>Whitenoise</h1>
+        <p>
+          Free white, pink, brown, grey, green and blue noise, plus calming rain, stream, ocean and
+          breeze sounds. Every sound is generated live in your browser, so it never loops, and there
+          are no ads or sign-ups.
+        </p>
+        <h2>Noise colors</h2>
+        <ul>
+          <li><strong>Blue noise</strong>: tilted toward the highs; a bright, airy hiss for focus.</li>
+          <li><strong>White noise</strong>: equal power at every frequency; best at masking speech.</li>
+          <li><strong>Grey noise</strong>: shaped so every pitch sounds equally loud.</li>
+          <li><strong>Pink noise</strong>: softer highs, like steady rainfall.</li>
+          <li><strong>Green noise</strong>: centred on the midrange, like the hum of the outdoors.</li>
+          <li><strong>Brown noise</strong>: deep and rounded, like a distant waterfall.</li>
+          <li><strong>Deep brown noise</strong>: a low, heavy rumble.</li>
+        </ul>
+        <h2>Nature sounds</h2>
+        <p>Soft rain, a gentle stream, slow ocean waves and a light breeze.</p>
+        <h2>Timers</h2>
+        <p>
+          A sleep timer that fades out gently instead of stopping abruptly, and a focus timer that
+          lowers the sound during breaks.
+        </p>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

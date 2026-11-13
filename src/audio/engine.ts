@@ -174,8 +174,10 @@ class AudioEngine {
     const g = this.sleep.gain;
     const now = this.ctx.currentTime;
     hold(g, now);
-    g.linearRampToValueAtTime(1, now + 0.5);
-    g.setValueAtTime(1, now + Math.max(0.5, totalSeconds - fadeSeconds));
+    // Rise to full (or stay there) at the usual fade-in pace, so starting a timer
+    // together with a sound doesn't cut its swell short.
+    g.linearRampToValueAtTime(1, now + FADE_IN);
+    g.setValueAtTime(1, now + Math.max(FADE_IN, totalSeconds - fadeSeconds));
     g.linearRampToValueAtTime(0, now + totalSeconds);
   }
 
@@ -184,17 +186,22 @@ class AudioEngine {
     ease(this.ctx, this.sleep.gain, this.playing ? 1 : 0, 1);
   }
 
-  /** A soft two-note bell for timer transitions. Bypasses the duck so it is always heard. */
+  /**
+   * A soft two-note bell for timer transitions. It follows the volume setting (so it is
+   * never louder than the sound itself) but skips the break duck so it is still heard.
+   */
   chime() {
     const ctx = this.ctx;
     if (!ctx || !this.playing) return;
+    const peak = 0.18 * toGain(this.masterVolume);
+    if (peak <= 0) return;
     const now = ctx.currentTime;
     [660, 880].forEach((freq, i) => {
       const t = now + i * 0.35;
       const osc = new OscillatorNode(ctx, { frequency: freq });
       const env = new GainNode(ctx, { gain: 0 });
       env.gain.setValueAtTime(0, t);
-      env.gain.linearRampToValueAtTime(0.18, t + 0.02);
+      env.gain.linearRampToValueAtTime(peak, t + 0.02);
       env.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
       osc.connect(env).connect(this.limiter);
       osc.start(t);
@@ -310,7 +317,10 @@ class AudioEngine {
     navigator.mediaSession.metadata = new MediaMetadata({
       title: 'Whitenoise',
       artist: 'Focus & sleep sounds',
-      artwork: [{ src: '/icon.svg', sizes: '512x512', type: 'image/svg+xml' }],
+      artwork: [
+        { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+        { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      ],
     });
     navigator.mediaSession.setActionHandler('play', () => this.onRemoteToggle(true));
     navigator.mediaSession.setActionHandler('pause', () => this.onRemoteToggle(false));

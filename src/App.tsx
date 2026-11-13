@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { soundById, soundByKey } from './audio/sounds';
+import { About } from './components/About';
 import { Player } from './components/Player';
+import { Settings } from './components/Settings';
 import { SoundGrid } from './components/SoundGrid';
 import { useStore } from './state/store';
 
@@ -8,6 +10,7 @@ export default function App() {
   const current = useStore((s) => s.current);
   const playing = useStore((s) => s.playing);
   const tick = useStore((s) => s.tick);
+  const calmVisuals = useStore((s) => s.settings.calmVisuals);
   const [now, setNow] = useState(Date.now());
   const sound = current ? soundById(current) : null;
 
@@ -25,7 +28,7 @@ export default function App() {
     const onKey = (e: KeyboardEvent) => {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const el = e.target as HTMLElement;
-      if (el.closest('input, textarea, [popover]')) return;
+      if (el.closest('input, textarea, [popover], [role="switch"]')) return;
       const { togglePlay, select } = useStore.getState();
       if (e.code === 'Space' && !el.closest('button')) {
         e.preventDefault();
@@ -39,6 +42,11 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  // Calm visuals switches off animations everywhere (see [data-calm] in styles.css).
+  useEffect(() => {
+    document.documentElement.toggleAttribute('data-calm', calmVisuals);
+  }, [calmVisuals]);
+
   useEffect(() => {
     document.title = sound && playing ? `${sound.name} · Whitenoise` : 'Whitenoise';
   }, [sound, playing]);
@@ -50,10 +58,13 @@ export default function App() {
       style={{ '--tone': sound?.tone ?? 'var(--neutral-tone)' } as React.CSSProperties}
     >
       <header className="topbar">
-        <span className="wordmark">whitenoise</span>
-        <span className="topbar-note">
-          <kbd>Space</kbd> play · <kbd>1</kbd>–<kbd>7</kbd> noise · <kbd>Q</kbd>–<kbd>R</kbd> nature
-        </span>
+        <h1 className="wordmark">whitenoise</h1>
+        <div className="topbar-end">
+          <span className="topbar-note">
+            <kbd>Space</kbd> play · <kbd>1</kbd>–<kbd>7</kbd> noise · <kbd>Q</kbd>–<kbd>R</kbd> nature
+          </span>
+          <Settings />
+        </div>
       </header>
 
       <main className="layout">
@@ -62,9 +73,9 @@ export default function App() {
             <span className="dot" />
             {sound ? (playing ? 'Now playing' : 'Paused') : 'Nothing playing'}
           </p>
-          <h1 key={current ?? 'none'} className="title">
+          <h2 key={current ?? 'none'} className="title">
             {sound ? sound.name : <>Choose a&nbsp;sound.</>}
-          </h1>
+          </h2>
           <p className="lede">
             {sound
               ? sound.hint
@@ -75,6 +86,8 @@ export default function App() {
 
         <SoundGrid />
       </main>
+
+      <About />
 
       <footer className="footer">
         <span>Generated in your browser with the Web Audio API.</span>
